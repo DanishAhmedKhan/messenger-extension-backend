@@ -1,0 +1,4 @@
+{
+    "name": "Messenger Extension Development",
+    "db": "mongodb://localhost/messenger_extension_dev"
+}

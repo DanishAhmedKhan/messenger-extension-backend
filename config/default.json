@@ -1,0 +1,6 @@
+{
+    "name": "Messenger Extension",
+    "server": {
+        "port": 4400
+    }
+}
