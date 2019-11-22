@@ -34,8 +34,10 @@ if (env == 'production') {
 
 
 const userApi = require('./api/user.js');
+const playgroundApi = require('./playground/test');
 
 app.use('/api/user', userApi);
+app.use('/playground', playgroundApi);
 
 // connecting to the mongoDB Atlas cloud storage
 const dbUrl = config.get('db');

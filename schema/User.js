@@ -25,11 +25,8 @@ const userSchema = new Schema({
         _id: false,
     }],
     friends: [{
-        name: {
-            type: String,
-            minlength: 1,
-        },
-        color: String,
+        name: String,
+        tag: String,
         _id: false,
     }]
 });

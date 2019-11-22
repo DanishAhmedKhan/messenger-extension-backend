@@ -74,8 +74,81 @@ const addTag = async (req, res) => {
     res.status(200).send(__.success('Tags added'));
 };
 
+const removeTag = async (req, res) => {
+    const error = __.validate(req.body, {
+        name: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id }, {
+        $pull: { 'tags': { name: req.body.name } }
+    });
+
+    res.status(200).send(__.success('Tag removed'));
+};
+
+const getAllTags = async (req, res) => {
+    const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
+    return res.status(200).send(__.success(tags));
+};
+
+const addTagToFriend = async (req, res) => {
+    const error = __.validate(req.body, {
+        friendName: Joi.string().required(),
+        tag: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const result = await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
+        $set: {
+            'friends.$.tag': req.body.tag,
+        }
+    });
+
+    if (result.nModified == 0) {
+        await User.updateOne({ _id: req.user._id }, {
+            $push: {
+                friends: {
+                    name: req.body.friendName,
+                    tag: req.body.tag,
+                }
+            }
+        });
+    }
+
+    res.status(200).send(__.success('Tag added to friend'));
+};
+
+const removeFriend = async (req, res) => {
+    const error = __.validate(req.body, {
+        friendName: Joi.string().required()
+    });
+
+    await User.updateOne({ _id: req.user._id }, {
+        $pull: { 'friends.name': req.body.name }
+    });
+
+    res.status(200).send(__.success('removed friend'));
+};
+
+const getFriendList = async (req, res) => {
+    const { friends } = await User.findOne({ _id: req.user._id }, 'friends');
+    res.status(200).send(__.success(friends));
+};  
+
+const getAllTagsAndFriendList = async (req, res) => {
+    const { tags, friends } = await User.findOne({ _id: req.user._id }, 'tags friends');
+    res.status(200).send(__.success({tags, friends}));
+};
+
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/addTag', auth, addTag);
+router.post('/removeTag', auth, removeTag);
+router.post('/getAllTags', auth, getAllTags);
+router.post('/addTagToFriend', auth, addTagToFriend);
+router.post('/removeFriend', removeFriend);
+router.post('/getFriendList', auth, getFriendList);
+router.post('/getAllTagsAndFriendList', auth, getAllTagsAndFriendList);
 
 module.exports = router;
