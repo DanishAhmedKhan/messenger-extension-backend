@@ -84,6 +84,12 @@ const removeTag = async (req, res) => {
         $pull: { 'tags': { name: req.body.name } }
     });
 
+    await User.updateOne({ _id: req.user._id }, {
+        $set: { 'friends.$[element].tag': '...' }
+    }, {
+        arrayFilters: [{ 'element.tag': req.body.name }]
+    });
+
     res.status(200).send(__.success('Tag removed'));
 };
 
@@ -94,14 +100,18 @@ const getAllTags = async (req, res) => {
 
 const addTagToFriend = async (req, res) => {
     const error = __.validate(req.body, {
+        friendId: Joi.string().required(),
         friendName: Joi.string().required(),
         tag: Joi.string().required(),
+        imageUrl: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    const result = await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
+    const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
         $set: {
+            'friends.$.name': req.body.name,
             'friends.$.tag': req.body.tag,
+            'friends.$.imageUrl': req.body.imageUrl,
         }
     });
 
@@ -109,8 +119,10 @@ const addTagToFriend = async (req, res) => {
         await User.updateOne({ _id: req.user._id }, {
             $push: {
                 friends: {
+                    id: req.body.friendId,
                     name: req.body.friendName,
                     tag: req.body.tag,
+                    imageUrl: req.body.imageUrl,
                 }
             }
         });
@@ -123,6 +135,7 @@ const removeFriend = async (req, res) => {
     const error = __.validate(req.body, {
         friendName: Joi.string().required()
     });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await User.updateOne({ _id: req.user._id }, {
         $pull: { 'friends.name': req.body.name }
@@ -131,14 +144,83 @@ const removeFriend = async (req, res) => {
     res.status(200).send(__.success('removed friend'));
 };
 
+const removeMultipleFriends = async (req, res) => {
+    const error = __.validate(req.body, {
+        friendsName: Joi.array().items(Joi.string())
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    friendsArray = [];
+    for (let i = 0; i < req.body.friendsName.length; i++) {
+        friendsArray.push({ name: req.body.friendsName[i], tag: '...' });
+    }
+
+    await User.updateOne({ _id: req.user._id }, {
+        $push: { friends: { $each: friendsArray } }
+    });
+
+    res.status(200).send(__.success('Removed multiple friends'));
+};
+
 const getFriendList = async (req, res) => {
     const { friends } = await User.findOne({ _id: req.user._id }, 'friends');
     res.status(200).send(__.success(friends));
 };  
 
 const getAllTagsAndFriendList = async (req, res) => {
-    const { tags, friends } = await User.findOne({ _id: req.user._id }, 'tags friends');
-    res.status(200).send(__.success({tags, friends}));
+    const { tags, friends } = await User.findOne({ _id: req.user._id }, 'tags friends messages');
+    res.status(200).send(__.success({tags, friends, messages}));
+};
+
+const updateTagsAndFriends = async (req, res) => {
+    const error = __.validate(req.body, {
+        tags: Joi.array().items(Joi.object().keys({
+            name: Joi.string(),
+            color: Joi.string(),
+        })),
+        tags: Joi.array().items(Joi.object().keys({
+            name: Joi.string(),
+            tag: Joi.string(),
+        })),
+    });
+    if (error) return res.status(200).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id }, {
+        $set: {
+            tags: req.body.tags,
+            friends: req.body.friends,
+        }
+    });
+
+    req.status(200).send(__.success('Updated tags and friends'));
+};
+
+const addNoteToFriend = async (req, res) => {
+    const error = __.validate(req.body, {
+        friendName: Joi.string().required(),
+        note: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
+        $push : {
+            'friends.$.notes': req.body.note,
+        }
+    });
+
+    res.status(200).send(__.success('Added note to friend'));
+};
+
+const addMessage = async (req, res) => {
+    const error = __.validate(req.body, {
+        message: Joi.string().required(),
+    });
+
+    await User.updateOne({ _id: req.user._id }, {
+        $push: { messages: req.body.message }
+    });
+
+    res.status(200).send(__.success('Message added'));
 };
 
 router.post('/signup', signup);
@@ -150,5 +232,8 @@ router.post('/addTagToFriend', auth, addTagToFriend);
 router.post('/removeFriend', removeFriend);
 router.post('/getFriendList', auth, getFriendList);
 router.post('/getAllTagsAndFriendList', auth, getAllTagsAndFriendList);
+router.post('/updateTagsAndFriends', auth, updateTagsAndFriends);
+router.post('/addNoteToFriend', auth, addNoteToFriend);
+router.post('/addMessage', auth, addMessage);
 
 module.exports = router;

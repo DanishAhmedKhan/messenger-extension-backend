@@ -25,10 +25,14 @@ const userSchema = new Schema({
         _id: false,
     }],
     friends: [{
+        id: String,
         name: String,
         tag: String,
+        imageUrl: String,
+        notes: [ String ],
         _id: false,
-    }]
+    }],
+    messages: [ String ]
 });
 
 userSchema.methods.generateAuthToken = function() {
