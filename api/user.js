@@ -29,9 +29,9 @@ const signup = async (req, res) => {
 
     const newUser = new User(user);
     await newUser.save();
-    const token = newUser.generateAuthToken();
+    const authToken = newUser.generateAuthToken();
 
-    res.header('x-user-auth-token', token)
+    res.header('x-user-auth-token', authToken)
        .status(200)
        .send(__.success('Signed up.'));
 };
@@ -109,7 +109,7 @@ const addTagToFriend = async (req, res) => {
 
     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
         $set: {
-            'friends.$.name': req.body.name,
+            'friends.$.name': req.body.friendName,
             'friends.$.tag': req.body.tag,
             'friends.$.imageUrl': req.body.imageUrl,
         }
@@ -167,9 +167,9 @@ const getFriendList = async (req, res) => {
     res.status(200).send(__.success(friends));
 };  
 
-const getAllTagsAndFriendList = async (req, res) => {
-    const { tags, friends } = await User.findOne({ _id: req.user._id }, 'tags friends messages');
-    res.status(200).send(__.success({tags, friends, messages}));
+const loadData = async (req, res) => {
+    const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
+    res.status(200).send(__.success({tags, friends, templates}));
 };
 
 const updateTagsAndFriends = async (req, res) => {
@@ -223,6 +223,64 @@ const addMessage = async (req, res) => {
     res.status(200).send(__.success('Message added'));
 };
 
+const addTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        template: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id }, {
+        $push: { templates: { name: req.body.template } }
+    });
+
+    return res.status(200).send(__.success('New template added'));
+};
+
+const removeTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        template: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id }, {
+        $pull: { 'templates': { name: req.body.template } }
+    });
+
+    res.status(200).send(__.success('Removed template'));
+};
+
+const addMessageToTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        template: Joi.string().required(),
+        message: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+        $push: {
+            'templates.$.messages': req.body.message
+        }
+    });
+
+    res.status(200).send(__.success('Message added to template'));
+};  
+
+const removeMessageFromTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        template: Joi.string().required(),
+        message: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+        $pull: {
+            'templates.$.messages': req.body.message
+        }
+    });
+
+    res.status(200).send(__.success('Message removed from template'));
+}
+
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/addTag', auth, addTag);
@@ -231,9 +289,13 @@ router.post('/getAllTags', auth, getAllTags);
 router.post('/addTagToFriend', auth, addTagToFriend);
 router.post('/removeFriend', removeFriend);
 router.post('/getFriendList', auth, getFriendList);
-router.post('/getAllTagsAndFriendList', auth, getAllTagsAndFriendList);
+router.post('/loadData', auth, loadData);
 router.post('/updateTagsAndFriends', auth, updateTagsAndFriends);
 router.post('/addNoteToFriend', auth, addNoteToFriend);
 router.post('/addMessage', auth, addMessage);
+router.post('/removeTemplate', auth, removeTemplate);
+router.post('/addTemplate', auth, addTemplate);
+router.post('/addMessageToTemplate', auth, addMessageToTemplate);
+router.post('/removeMessageFromTemplate', auth, removeMessageFromTemplate);
 
 module.exports = router;

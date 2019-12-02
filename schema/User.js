@@ -32,7 +32,11 @@ const userSchema = new Schema({
         notes: [ String ],
         _id: false,
     }],
-    messages: [ String ]
+    templates: [{
+        name: String,
+        messages: [ String ],
+        _id: false,
+    }],
 });
 
 userSchema.methods.generateAuthToken = function() {
