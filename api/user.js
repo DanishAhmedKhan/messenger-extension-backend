@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Joi = require('joi');
 const __ = require('./appUtils');
 const User = require('../schema/User');
@@ -281,6 +281,27 @@ const removeMessageFromTemplate = async (req, res) => {
     res.status(200).send(__.success('Message removed from template'));
 }
 
+const changeTag = async (req, res) => {
+    console.log(req.body);
+    const error = __.validate(req.body, {
+        oldTag: Joi.string().required(),
+        newTag: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id, 'tags.name': req.body.oldTag }, {
+        $set: { 'tags.$.name': req.body.newTag }
+    });
+
+    await User.updateOne({ _id: req.user._id }, {
+        $set: { 'friends.$[element].tag': req.body.newTag },
+    }, { 
+        arrayFilters: [{ 'element.tag': req.body.oldTag }] 
+    });
+
+    res.status(200).send(__.success('Tag changed'));
+};
+
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/addTag', auth, addTag);
@@ -297,5 +318,6 @@ router.post('/removeTemplate', auth, removeTemplate);
 router.post('/addTemplate', auth, addTemplate);
 router.post('/addMessageToTemplate', auth, addMessageToTemplate);
 router.post('/removeMessageFromTemplate', auth, removeMessageFromTemplate);
+router.post('/changeTag', auth, changeTag);
 
 module.exports = router;
