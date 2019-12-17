@@ -19,8 +19,8 @@ const env = app.get('env');
 const ipAddress = ip.address();
 console.log(`Trying to start Messenger Extension server at ${ipAddress} (in ${env} mode)...`);
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cors());
 
 if (env == 'development') {
@@ -38,6 +38,9 @@ const playgroundApi = require('./playground/test');
 
 app.use('/api/user', userApi);
 app.use('/playground', playgroundApi);
+
+// Image static routing
+app.use(express.static(__dirname + '/public'));
 
 // connecting to the mongoDB Atlas cloud storage
 const dbUrl = config.get('db');

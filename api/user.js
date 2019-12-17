@@ -1,12 +1,44 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const Joi = require('joi');
+const Jimp = require('jimp');
+const fs = require('fs');
+const base64Img = require('base64-img');
 const __ = require('./appUtils');
 const User = require('../schema/User');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();
+
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, './public/uploads/');
+    },
+    filename: function(req, file, cb) {
+        cb(null, req.fileName);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    let mt = file.mimetype;
+    if (mt == 'image/jpg' || mt == 'image/jpg' || mt == 'image/png') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+}
+
+const upload = multer({ 
+    storage: storage, 
+    limits: {
+        fileSize: 1024 * 1024 * 5,
+    },
+    fileFilter: fileFilter,
+});
+
+
 
 const signup = async (req, res) => {
     const error = __.validate(req.body, {
@@ -196,6 +228,7 @@ const updateTagsAndFriends = async (req, res) => {
 };
 
 const addNoteToFriend = async (req, res) => {
+    console.log(req.body);
     const error = __.validate(req.body, {
         friendName: Joi.string().required(),
         note: Joi.string().required(),
@@ -265,6 +298,51 @@ const addMessageToTemplate = async (req, res) => {
     res.status(200).send(__.success('Message added to template'));
 };  
 
+const addImageToTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        imageBase64: Joi.string().required(),
+        template: Joi.string().required(),
+        imageName: Joi.string().required(),
+        imageType: Joi.string().required(),
+    });
+    if (error) return res.status(200).send(__.error(error.details[0].message));
+
+    //let base64 = req.body.imageBase64.replace('data:' + req.body.imageType + + ';base64,', '');
+
+    if (req.body.imageName.indexOf('--template--') < 0)
+        return res.status(400).send(__.error('Image name invalid'));
+
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+        $push: {
+            'templates.$.messages': req.body.imageName,
+        }
+    });
+
+    try {
+        let b = req.body.imageBase64.substring(base64Img.indexOf(',') + 1);
+        console.log(b);
+        // let buffer = Buffer.from(b, 'base64');
+        // Jimp.read(buffer, (err, image) => {
+        //     if (err)
+        //         console.log(err);
+        //     else {
+        //         image.getBase64(Jimp.MIME_PNG, function(err, src) {
+
+        //         }).write('hello.png');
+        //     }
+        // });
+
+        base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0], 
+            function(err, filepath) {
+                if (!err)
+                    res.status(200).send(__.success('Images uploaded to template'));
+            }
+        );
+    } catch (e) {
+        res.status(400).send(__.error('Base64 data invalid'));
+    }
+};  
+
 const removeMessageFromTemplate = async (req, res) => {
     const error = __.validate(req.body, {
         template: Joi.string().required(),
@@ -278,11 +356,14 @@ const removeMessageFromTemplate = async (req, res) => {
         }
     });
 
+    if (req.body.message.indexOf('--template--') >= 0) {
+        fs.unlink('public/temp/' + message);
+    }
+
     res.status(200).send(__.success('Message removed from template'));
 }
 
 const changeTag = async (req, res) => {
-    console.log(req.body);
     const error = __.validate(req.body, {
         oldTag: Joi.string().required(),
         newTag: Joi.string().required(),
@@ -302,6 +383,64 @@ const changeTag = async (req, res) => {
     res.status(200).send(__.success('Tag changed'));
 };
 
+const changeTagColor = async (req, res) => {
+    const error = __.validate(req.body, {
+        tag: Joi.string().required(),
+        color: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id, 'tags.name': req.body.tag }, {
+        $set: { 'tags.$.color': req.body.color }
+    });
+
+    res.status(200).send(__.success('Tag color changed'));
+};
+
+const changeTemplateOrder = async (req, res) => {
+    const error = __.validate(req.body, {
+        i1: Joi.number().integer().required(),
+        i2: Joi.number().integer().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    let i1 = Number(req.body.i1),
+        i2 = Number(req.body.i2);
+
+    console.log(i1, i2);
+    console.log(typeof i1);
+    console.log(typeof i2);
+    
+    const result = await User.findOne({ _id: req.user._id }, {
+        array: { $slice: [req.body.i1, 1] }
+    });
+    let template = result.templates[0];
+
+    await User.updateOne({ _id: req.user._id }, {
+        $unset: { ['templates.' + i1]: 1 }
+    });
+    await User.updateOne({ _id: req.user._id }, {
+        $pull: { 
+            templates: {
+                $in: [ null ]
+            }
+        }
+    });
+
+    await User.updateOne({ _id: req.user._id }, {
+        $push: {
+            templates: {
+                $each: [
+                    template
+                ],
+                $position: i2
+            }
+        }
+    });
+
+    res.status(200).send(__.success('Template order changed'));
+};
+
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/addTag', auth, addTag);
@@ -317,7 +456,10 @@ router.post('/addMessage', auth, addMessage);
 router.post('/removeTemplate', auth, removeTemplate);
 router.post('/addTemplate', auth, addTemplate);
 router.post('/addMessageToTemplate', auth, addMessageToTemplate);
+router.post('/addImageToTemplate', auth, addImageToTemplate);
 router.post('/removeMessageFromTemplate', auth, removeMessageFromTemplate);
 router.post('/changeTag', auth, changeTag);
+router.post('/changeTagColor', auth, changeTagColor);
+router.post('/changeTemplateOrder', auth, changeTemplateOrder);
 
 module.exports = router;
