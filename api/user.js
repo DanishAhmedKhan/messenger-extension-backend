@@ -236,12 +236,28 @@ const addNoteToFriend = async (req, res) => {
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
-        $push : {
+        $push: {
             'friends.$.notes': req.body.note,
         }
     });
 
     res.status(200).send(__.success('Added note to friend'));
+};
+
+const removeNoteFromFriend = async (req, res) => {
+    const error = __.validate(req.body, {
+        friendName: Joi.string().required(),
+        note: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
+        $pull: {
+            'friends.$.notes': req.body.note,
+        }
+    });
+
+    res.status(200).send(__.success('Removed note from friend'));
 };
 
 const addMessage = async (req, res) => {
@@ -319,8 +335,8 @@ const addImageToTemplate = async (req, res) => {
     });
 
     try {
-        let b = req.body.imageBase64.substring(base64Img.indexOf(',') + 1);
-        console.log(b);
+        //let b = req.body.imageBase64.substring(base64Img.indexOf(',') + 1);
+        //console.log(b);
         // let buffer = Buffer.from(b, 'base64');
         // Jimp.read(buffer, (err, image) => {
         //     if (err)
@@ -357,7 +373,7 @@ const removeMessageFromTemplate = async (req, res) => {
     });
 
     if (req.body.message.indexOf('--template--') >= 0) {
-        fs.unlink('public/temp/' + message);
+        fs.unlink('public/temp/' + req.body.message);
     }
 
     res.status(200).send(__.success('Message removed from template'));
@@ -481,6 +497,7 @@ router.post('/getFriendList', auth, getFriendList);
 router.post('/loadData', auth, loadData);
 router.post('/updateTagsAndFriends', auth, updateTagsAndFriends);
 router.post('/addNoteToFriend', auth, addNoteToFriend);
+router.post('/removeNoteFromFriend', auth, removeNoteFromFriend);
 router.post('/addMessage', auth, addMessage);
 router.post('/removeTemplate', auth, removeTemplate);
 router.post('/addTemplate', auth, addTemplate);
