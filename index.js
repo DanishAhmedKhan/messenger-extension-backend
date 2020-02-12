@@ -7,6 +7,8 @@ const config = require('config');
 const cors = require('cors');
 const ip = require('ip');
 
+const redirectToHTTPS = require('express-http-to-https').redirectToHTTPS;
+
 const app = express();
 
 const userAuthToken = config.get('userAuthToken');
@@ -18,6 +20,8 @@ if (userAuthToken == null) {
 const env = app.get('env');
 const ipAddress = ip.address();
 console.log(`Trying to start Messenger Extension server at ${ipAddress} (in ${env} mode)...`);
+
+app.use(redirectToHTTPS([/localhost:(\d{4})/], [/\/insecure/], 301));
 
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));

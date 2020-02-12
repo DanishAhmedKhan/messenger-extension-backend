@@ -423,34 +423,47 @@ const changeTemplateOrder = async (req, res) => {
     let i1 = Number(req.body.i1),
         i2 = Number(req.body.i2);
 
-    const result = await User.findOne({ _id: req.user._id }, {
-        array: { $slice: [req.body.i1, 1] }
-    });
-    let template = result.templates[0];
+    let { templates } = await User.findOne({ _id: req.user._id }, 'templates');
+
+    let tmp = templates[i1];
+    templates.splice(i1, 1);
+    templates.splice(i2, 0, tmp);
 
     await User.updateOne({ _id: req.user._id }, {
-        $unset: { ['templates.' + i1]: 1 }
-    });
-    await User.updateOne({ _id: req.user._id }, {
-        $pull: { 
-            templates: {
-                $in: [ null ]
-            }
-        }
+        $set: { templates: templates }
     });
 
-    await User.updateOne({ _id: req.user._id }, {
-        $push: {
-            templates: {
-                $each: [
-                    template
-                ],
-                $position: i2
-            }
-        }
-    });
+    res.status(200).send(__.success('Templates reordered'));
 
-    res.status(200).send(__.success('Template order changed'));
+
+    // const result = await User.findOne({ _id: req.user._id }, {
+    //     array: { $slice: [req.body.i1, 1] }
+    // });
+    // let template = result.templates[0];
+
+    // await User.updateOne({ _id: req.user._id }, {
+    //     $unset: { ['templates.' + i1]: 1 }
+    // });
+    // await User.updateOne({ _id: req.user._id }, {
+    //     $pull: { 
+    //         templates: {
+    //             $in: [ null ]
+    //         }
+    //     }
+    // });
+
+    // await User.updateOne({ _id: req.user._id }, {
+    //     $push: {
+    //         templates: {
+    //             $each: [
+    //                 template
+    //             ],
+    //             $position: i2
+    //         }
+    //     }
+    // });
+
+    // res.status(200).send(__.success('Template order changed'));
 };
 
 const changeMessageOrder = async (req, res) => {
@@ -464,20 +477,16 @@ const changeMessageOrder = async (req, res) => {
     let t = req.body.template,
         i1 = Number(req.body.i1),
         i2 = Number(req.body.i2);
-    console.log(t, i1, i2);
     
     const result = await User.findOne({ _id: req.user._id, 'templates.name': t }, 
         { 'templates.$': 1 });
-        console.log(result);
     let messages = result.templates[0].messages;
-    console.log(messages);
 
     let tmp = messages[i1];
     messages.splice(i1, 1);
     messages.splice(i2, 0, tmp);
-    console.log(messages);
 
-    const r = await User.updateOne({ _id: req.user._id, 'templates.name': t }, {
+    await User.updateOne({ _id: req.user._id, 'templates.name': t }, {
         $set: {
             'templates.$.messages': messages
         }
@@ -485,6 +494,64 @@ const changeMessageOrder = async (req, res) => {
 
     res.status(200).send(__.success('Messages order changed'));
 };
+
+const changeTagOrder = async (req, res) => {
+    const error = __.validate(req.body, {
+        i1: Joi.number().required(),
+        i2: Joi.number().required()
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    let i1 = Number(req.body.i1),
+        i2 = Number(req.body.i2);
+
+    const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
+
+    let tmp = tags[i1];
+    tags.splice(i1, 1);
+    tags.splice(i2, 0, tmp);
+
+    await User.updateOne({ _id: req.user._id }, {
+        $set: { tags: tags }
+    });
+
+    res.status(200).send(__.success('Tags order changed'));
+};
+
+const changeTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        oldTemplate: Joi.string().required(),
+        newTemplate: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error.details[0].message);
+
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.oldTemplate }, {
+        $set: { 
+            'templates.$.name': req.body.newTemplate,
+        }
+    });
+
+    res.status(200).send(__.success('Template changed'));
+};
+
+const changeMessage = async (req, res) => {
+    const error = __.validate(req.body, {
+        index: Joi.number().required(),
+        template: Joi.string().required(),
+        newMessage: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    await User.updateOne({
+        _id: req.user._id,
+        'templates.name': req.body.template,
+    }, {
+        $set: { ['templates.$.messages.' + req.body.index]: req.body.newMessage }
+    });
+
+    res.status(200).send(__.success('Message changed'));
+}
+
 
 router.post('/signup', signup);
 router.post('/login', login);
@@ -508,5 +575,8 @@ router.post('/changeTag', auth, changeTag);
 router.post('/changeTagColor', auth, changeTagColor);
 router.post('/changeTemplateOrder', auth, changeTemplateOrder);
 router.post('/changeMessageOrder', auth, changeMessageOrder);
+router.post('/changeTagOrder', auth, changeTagOrder);
+router.post('/changeTemplate', auth, changeTemplate);
+router.post('/changeMessage', auth, changeMessage);
 
 module.exports = router;
