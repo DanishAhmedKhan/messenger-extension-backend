@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const config = require('config');
 const cors = require('cors');
 const ip = require('ip');
+const https = require('https');
 
 const redirectToHTTPS = require('express-http-to-https').redirectToHTTPS;
 
@@ -36,6 +37,10 @@ if (env == 'production') {
     app.use(helmet());
 }
 
+app.use('/test', async (req, res) => {
+    console.log('Server running properly!');
+    res.status(200).send('Server running properly');
+});
 
 const userApi = require('./api/user.js');
 const playgroundApi = require('./playground/test');
@@ -62,6 +67,12 @@ mongoose.connect(dbUrl,  mongoDbConfig)
 
 // starting the server
 const port = process.env.PORT || config.get('server.port');
+// https.createServer({
+//     key: fs.readFileSync('key.pem'),
+//     cert: fs.readFileSync('cert.pem')
+// }, app).listen(port, () => {
+//     console.log(`Listining to port ${post}`);
+// });
 app.listen(port, () => {
     console.log(`Listining to port ${port}`);
 });

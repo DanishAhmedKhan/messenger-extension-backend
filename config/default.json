@@ -1,6 +1,6 @@
 {
     "name": "Messenger Extension",
     "server": {
-        "port": 4400
+        "port": 3000
     }
 }

@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const Joi = require('joi');
+let crypto = require('crypto');
 const Jimp = require('jimp');
+let nodemailer = require('nodemailer');
 const fs = require('fs');
 const base64Img = require('base64-img');
 const __ = require('./appUtils');
@@ -87,6 +89,73 @@ const login = async (req, res) => {
        .send(__.success('Loged in.'));
 };  
 
+const forgotPassword = async (req, res) => {
+    const error = __.validate(req.body, {
+        email: Joi.string().email().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) return res.status(400).send(__.error('This email is not registered'));
+
+    let token = __.generateRandom(6);
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+    await user.save();
+
+    let smptpTransport = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+            user: 'khand3826@gmail.com',
+            pass: 'RealMadrid123',
+        }
+    });
+
+    let mailOptions = {
+        to: req.bosd.email,
+        from: 'khand3826@gmail.com',
+        subject: 'Pepper account password reset',
+        text: `You are receiving this beacuse you (or someone else) have requested the reset of your 
+        Pepper account password. \n\n Your password reset token is ${token} \n\n
+        If you did not request this, please ignore this email and your password remain unchnaged.`
+    };
+
+    smptpTransport.sendMail(mailOptions, (err) => {
+        if (err) return res.status(400).send(__.error('There was a problem resettign your password.'));
+        res.status(200).send(__.success('An email has been send to reset your password'));
+    });
+};
+
+const resetPassword = (req, res) => {
+    const error = __.validate(req.body, {
+        email: Joi.string().email().required(),
+        token: Joi.string().required(),
+        password: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const user = await User.findOne({ email: req.bosy.email }, 'resetPasswordToken resetPasswordExpires');
+    if (!user) return res.status(400).send(__.error('This email is not registered'));
+
+    if (user.resetPasswordExpires < Date.now())
+        return res.status(400).send(__.error('Reset token has been expired'));
+
+    if (user.resetPasswordToken != req.body.token) 
+        return res.status(400).send(__.error('Reset token is invalid'));
+        
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+
+    await User.update({ email: req.body.email }, {
+        $set: {
+            password: hashedPassword,
+        }
+    });
+
+    res.status(200).send(__.success('Password has been reset successfully'));
+};
+
 const addTag = async (req, res) => {
     const error = __.validate(req.body, {
         name: Joi.string().required(),
@@ -131,12 +200,14 @@ const getAllTags = async (req, res) => {
 };
 
 const addTagToFriend = async (req, res) => {
+    console.log(req.body);
     const error = __.validate(req.body, {
         friendId: Joi.string().required(),
         friendName: Joi.string().required(),
         tag: Joi.string().required(),
         imageUrl: Joi.string().required(),
     });
+    console.log(error);
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
@@ -170,10 +241,10 @@ const removeFriend = async (req, res) => {
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await User.updateOne({ _id: req.user._id }, {
-        $pull: { 'friends.name': req.body.name }
+        $pull: { 'friends': { 'name': req.body.friendName } }
     });
 
-    res.status(200).send(__.success('removed friend'));
+    res.status(200).send(__.success('Removed friend'));
 };
 
 const removeMultipleFriends = async (req, res) => {
@@ -373,7 +444,9 @@ const removeMessageFromTemplate = async (req, res) => {
     });
 
     if (req.body.message.indexOf('--template--') >= 0) {
-        fs.unlink('public/temp/' + req.body.message);
+        fs.unlink('public/temp/' + req.body.message, () => {
+            console.log('File deleted');
+        });
     }
 
     res.status(200).send(__.success('Message removed from template'));
@@ -555,11 +628,13 @@ const changeMessage = async (req, res) => {
 
 router.post('/signup', signup);
 router.post('/login', login);
+router.post('/forgotPassword', forgotPassword);
+router.post('/resetPassword', resetPassword);
 router.post('/addTag', auth, addTag);
 router.post('/removeTag', auth, removeTag);
 router.post('/getAllTags', auth, getAllTags);
 router.post('/addTagToFriend', auth, addTagToFriend);
-router.post('/removeFriend', removeFriend);
+router.post('/removeFriend', auth, removeFriend);
 router.post('/getFriendList', auth, getFriendList);
 router.post('/loadData', auth, loadData);
 router.post('/updateTagsAndFriends', auth, updateTagsAndFriends);
