@@ -127,7 +127,7 @@ const forgotPassword = async (req, res) => {
     });
 };
 
-const resetPassword = (req, res) => {
+const resetPassword = async (req, res) => {
     const error = __.validate(req.body, {
         email: Joi.string().email().required(),
         token: Joi.string().required(),
