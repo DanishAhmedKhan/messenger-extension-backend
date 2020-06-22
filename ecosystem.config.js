@@ -3,7 +3,7 @@ module.exports = {
         {
           name: "pepper",
           script: "./index.js",
-          watch: true,
+          watch: false,
           env: {
               "PORT": 4400,
               "NODE_ENV": "development",

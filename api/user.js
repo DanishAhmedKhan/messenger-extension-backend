@@ -89,6 +89,23 @@ const login = async (req, res) => {
        .send(__.success('Loged in.'));
 };  
 
+const resetPassword2 = async (req, res) => {
+    const error = __.validate(req.body, {
+    	email: Joi.string().required(),
+	password: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error.details[0].message);
+
+    let salt = await bcrypt.genSalt(10);
+    let newPassword = await bcrypt.hash(req.body.password, salt); 
+
+    await User.updateOne({ email: req.body.email }, {
+    	$set: { password: newPassword }
+    });
+
+    res.status(200).send(__.success('Password has been reset'));
+}
+
 const forgotPassword = async (req, res) => {
     const error = __.validate(req.body, {
         email: Joi.string().email().required(),
@@ -629,7 +646,7 @@ const changeMessage = async (req, res) => {
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/forgotPassword', forgotPassword);
-router.post('/resetPassword', resetPassword);
+router.post('/resetPassword', resetPassword2);
 router.post('/addTag', auth, addTag);
 router.post('/removeTag', auth, removeTag);
 router.post('/getAllTags', auth, getAllTags);

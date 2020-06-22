@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const config = require('config');
 const cors = require('cors');
 const ip = require('ip');
-const https = require('https');
+//const https = require('https');
 const fs = require('fs');
 
 const redirectToHTTPS = require('express-http-to-https').redirectToHTTPS;
@@ -44,10 +44,10 @@ app.use('/test', async (req, res) => {
 });
 
 const userApi = require('./api/user.js');
-const playgroundApi = require('./playground/test');
+//const playgroundApi = require('./playground/test');
 
 app.use('/api/user', userApi);
-app.use('/playground', playgroundApi);
+//app.use('/playground', playgroundApi);
 
 // Image static routing
 app.use(express.static(__dirname + '/public'));
@@ -67,15 +67,15 @@ mongoose.connect(dbUrl,  mongoDbConfig)
     .catch(err => console.log('Could not connect to mongodb.', err));
 
 // starting the server
-const privateKey = fs.readFileSync('server.key');
-const publicKey = fs.readFileSync('server.cert');
-const port = process.env.PORT || config.get('server.port');
-https.createServer({
-    key: privateKey,
-    cert: publicKey,
-}, app).listen(port, () => {
-    console.log(`Listining to port ${port}`);
-});
-// app.listen(port, () => {
-//     console.log(`Listining to port ${port}`);
-// });
+//const privateKey = fs.readFileSync('server.key');
+//const publicKey = fs.readFileSync('server.cert');
+const port = 3000; //process.env.PORT || config.get('server.port');
+//https.createServer({
+//    key: privateKey,
+//    cert: publicKey,
+//}, app).listen(port, () => {
+//    console.log(`Listining to port ${port}`);
+//});
+ app.listen(port, () => {
+     console.log(`Listining to port ${port}`);
+ });
