@@ -1,4 +1,5 @@
 {
     "name": "Messenger Extension Production",
-    "db": "mongodb+srv://danish:danish@cluster0-fqipy.mongodb.net/test?retryWrites=true&w=majority"
+    "db": "mongodb+srv://danish:danish@cluster0-fqipy.mongodb.net/test?retryWrites=true&w=majority",
+    "userAuthToken": "Geazy-88**77"
 }
