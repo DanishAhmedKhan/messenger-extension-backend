@@ -226,7 +226,6 @@ const addTagToFriend = async (req, res) => {
     });
     console.log(error);
     if (error) return res.status(400).send(__.error(error.details[0].message));
-
     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
         $set: {
             'friends.$.name': req.body.friendName,
@@ -250,6 +249,42 @@ const addTagToFriend = async (req, res) => {
 
     res.status(200).send(__.success('Tag added to friend'));
 };
+
+// const updateImageUrlOfFriend = async (req, res) => {
+//     console.log(req.body);
+//     const error = __.validate(req.body, {
+//         friendId: Joi.string().required(),
+//         friendName: Joi.string().required(),
+//         tag: Joi.string().required(),
+//         imageUrl: Joi.string().required(),
+//     });
+//     console.log(error);
+//     if (error) return res.status(400).send(__.error(error.details[0].message));
+//     console.log(":::::::::::req.body.friendId::::::::", req.body.friendId);
+//     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
+//         $set: {
+//             'friends.$.name': req.body.friendName,
+//             'friends.$.tag': req.body.tag,
+//             'friends.$.imageUrl': req.body.imageUrl,
+//         }
+//     });
+
+//     if (result.nModified == 0) {
+//         console.log("::::::result.nModified == 0:::::::");
+//         await User.updateOne({ _id: req.user._id }, {
+//             $push: {
+//                 friends: {
+//                     id: req.body.friendId,
+//                     name: req.body.friendName,
+//                     tag: req.body.tag,
+//                     imageUrl: req.body.imageUrl,
+//                 }
+//             }
+//         });
+//     }
+
+//     res.status(200).send(__.success('Tag added to friend'));
+// };
 
 const removeFriend = async (req, res) => {
     const error = __.validate(req.body, {

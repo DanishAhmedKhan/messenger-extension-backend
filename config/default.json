@@ -2,5 +2,6 @@
     "name": "Messenger Extension",
     "server": {
         "port": 3000
-    }
+    },
+    "userAuthToken": "pepper123star"
 }
