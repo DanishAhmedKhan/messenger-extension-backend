@@ -25,20 +25,23 @@ router.post('/changeTagOrder', auth, validate(userValidator.changeTagOrder), use
 router.post('/loadData', auth, userController.loadData);
 
 // friend routes
-router.post('/removeFriend', auth, userController.removeFriend);
+router.post('/removeFriend', auth, validate(userValidator.removeFriend), userController.removeFriend); // needs change as depends on Name
+router.post('/updateTagsAndFriends', auth, validate(userValidator.updateTagsAndFriends), userController.updateTagsAndFriends);// not in use
+
 router.post('/getFriendList', auth, userController.getFriendList);
-router.post('/updateTagsAndFriends', auth, userController.updateTagsAndFriends);
-router.post('/addNoteToFriend', auth, userController.addNoteToFriend);
-router.post('/removeNoteFromFriend', auth, userController.removeNoteFromFriend);
+
+router.post('/addNoteToFriend', auth, validate(userValidator.addNoteToFriend), userController.addNoteToFriend); // needs change as depends on Name
+router.post('/removeNoteFromFriend', auth, validate(userValidator.removeNoteFromFriend), userController.removeNoteFromFriend); // needs change as depends on Name
+
 
 // template routes
-router.post('/addTemplate', auth, userController.addTemplate);
-router.post('/removeTemplate', auth, userController.removeTemplate);
-router.post('/addMessageToTemplate', auth, userController.addMessageToTemplate);
-router.post('/addImageToTemplate', auth, userController.addImageToTemplate);
-router.post('/removeMessageFromTemplate', auth, userController.removeMessageFromTemplate);
-router.post('/changeTemplateOrder', auth, userController.changeTemplateOrder);
-router.post('/changeTemplate', auth, userController.changeTemplate);
+router.post('/addTemplate', auth, validate(userValidator.addTemplate), userController.addTemplate);
+router.post('/removeTemplate', auth, validate(userValidator.removeTemplate), userController.removeTemplate);
+router.post('/addMessageToTemplate', auth, validate(userValidator.addMessageToTemplate), userController.addMessageToTemplate);
+router.post('/addImageToTemplate', auth, validate(userValidator.addImageToTemplate), userController.addImageToTemplate);
+router.post('/removeMessageFromTemplate', auth, validate(userValidator.removeMessageFromTemplate), userController.removeMessageFromTemplate);
+router.post('/changeTemplateOrder', auth, validate(userValidator.changeTemplateOrder), userController.changeTemplateOrder);
+router.post('/changeTemplate', auth, validate(userValidator.changeTemplate), userController.changeTemplate);
 
 // message routes
 router.post('/addMessage', auth, userController.addMessage);

@@ -331,95 +331,85 @@ export const changeTagOrder = async (req, res) => {
 
 // Friend APIs
 export const removeFriend = async (req, res) => {
-  const error = __.validate(req.body, {
-    friendName: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id }, {
-    $pull: { friends: { name: req.body.friendName } },
-  });
-
-  res.status(200).send(__.success('Removed friend'));
+  try {
+    console.log(':::::req.body.friendName::::::', req.body.friendName);
+    const data = await User.updateOne({ _id: req.user._id }, {
+      $pull: { friends: { name: req.body.friendName } },
+    });
+    console.log('::::data:::::', data);
+    return successResponse(req, res, 'Removed friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const removeMultipleFriends = async (req, res) => {
-  const error = __.validate(req.body, {
-    friendsName: Joi.array().items(Joi.string()),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    const friendsArray = [];
+    for (let i = 0; i < req.body.friendsName.length; i++) {
+      friendsArray.push({ name: req.body.friendsName[i], tag: '...' });
+    }
 
-  const friendsArray = [];
-  for (let i = 0; i < req.body.friendsName.length; i++) {
-    friendsArray.push({ name: req.body.friendsName[i], tag: '...' });
+    await User.updateOne({ _id: req.user._id }, {
+      $push: { friends: { $each: friendsArray } },
+    });
+
+    return successResponse(req, res, 'Removed friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
   }
-
-  await User.updateOne({ _id: req.user._id }, {
-    $push: { friends: { $each: friendsArray } },
-  });
-
-  res.status(200).send(__.success('Removed multiple friends'));
 };
 
 export const getFriendList = async (req, res) => {
-  const { friends } = await User.findOne({ _id: req.user._id }, 'friends');
-  res.status(200).send(__.success(friends));
+  try {
+    const { friends } = await User.findOne({ _id: req.user._id }, 'friends');
+    return successResponse(req, res, friends);
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const updateTagsAndFriends = async (req, res) => {
-  const error = __.validate(req.body, {
-    tags: Joi.array().items(Joi.object().keys({
-      name: Joi.string(),
-      color: Joi.string(),
-    })),
-    tags: Joi.array().items(Joi.object().keys({
-      name: Joi.string(),
-      tag: Joi.string(),
-    })),
-  });
-  if (error) return res.status(200).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id }, {
+      $set: {
+        tags: req.body.tags,
+        friends: req.body.friends,
+      },
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $set: {
-      tags: req.body.tags,
-      friends: req.body.friends,
-    },
-  });
-
-  req.status(200).send(__.success('Updated tags and friends'));
+    return successResponse(req, res, 'Updated tags and friends');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const addNoteToFriend = async (req, res) => {
-  console.log(req.body);
-  const error = __.validate(req.body, {
-    friendName: Joi.string().required(),
-    note: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
+      $push: {
+        'friends.$.notes': req.body.note,
+      },
+    });
 
-  await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
-    $push: {
-      'friends.$.notes': req.body.note,
-    },
-  });
-
-  res.status(200).send(__.success('Added note to friend'));
+    return successResponse(req, res, 'Added note to friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const removeNoteFromFriend = async (req, res) => {
-  const error = __.validate(req.body, {
-    friendName: Joi.string().required(),
-    note: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
+      $pull: {
+        'friends.$.notes': req.body.note,
+      },
+    });
 
-  await User.updateOne({ _id: req.user._id, 'friends.name': req.body.friendName }, {
-    $pull: {
-      'friends.$.notes': req.body.note,
-    },
-  });
-
-  res.status(200).send(__.success('Removed note from friend'));
+    return successResponse(req, res, 'Removed note from friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 // template APIs

@@ -86,7 +86,7 @@ export const changeTagOrder = {
 // Friend APIs
 export const removeFriend = {
   body: {
-    name: Joi.string().required(),
+    friendName: Joi.string().required(),
   },
 };
 
@@ -102,7 +102,7 @@ export const updateTagsAndFriends = {
       name: Joi.string(),
       color: Joi.string(),
     })),
-    tags: Joi.array().items(Joi.object().keys({
+    friends: Joi.array().items(Joi.object().keys({
       name: Joi.string(),
       tag: Joi.string(),
     })),
