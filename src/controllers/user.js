@@ -6,8 +6,8 @@ const Joi = require('joi');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const base64Img = require('base64-img');
-const __ = require('./appUtils');
-const User = require('../schema/User');
+const __ = require('../helpers/appUtils');
+const User = require('../models/User');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();

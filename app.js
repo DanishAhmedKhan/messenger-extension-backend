@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import ip from 'ip';
-import userApi from './api/user';
+import userApi from './src/controllers/user';
 
 
 dotenv.config();
