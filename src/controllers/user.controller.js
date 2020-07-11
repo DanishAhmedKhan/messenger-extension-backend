@@ -63,77 +63,70 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const error = __.validate(req.body, {
-    email: Joi.string().email().required(),
-    password: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    const user = await User.findOne({ email: req.body.email }, 'password');
+    if (!user) return errorResponse(req, res, 'This email is not registered', 400);
 
-  const user = await User.findOne({ email: req.body.email }, 'password');
-  if (!user) return res.status(400).send(__.error('This email is not registered'));
+    const validPassword = await bcrypt.compare(req.body.password, user.password);
+    if (!validPassword) return errorResponse(req, res, 'Invalid password !', 400);
 
-  const validPassword = await bcrypt.compare(req.body.password, user.password);
-  if (!validPassword) return res.status(400).send(__.error('Invalid password'));
-
-  const authToken = user.generateAuthToken();
-  res.header('x-user-auth-token', authToken)
-    .status(200)
-    .send(__.success('Loged in.'));
-};
-
-export const resetPassword2 = async (req, res) => {
-  const error = __.validate(req.body, {
-    email: Joi.string().required(),
-    password: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error.details[0].message);
-
-  const salt = await bcrypt.genSalt(10);
-  const newPassword = await bcrypt.hash(req.body.password, salt);
-
-  await User.updateOne({ email: req.body.email }, {
-    $set: { password: newPassword },
-  });
-
-  res.status(200).send(__.success('Password has been reset'));
+    const authToken = user.generateAuthToken();
+    res.header('x-user-auth-token', authToken);
+    return successResponse(req, res, 'Loged in.');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const forgotPassword = async (req, res) => {
-  const error = __.validate(req.body, {
-    email: Joi.string().email().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) return errorResponse(req, res, 'This email is not registered', 400);
 
-  const user = await User.findOne({ email: req.body.email });
-  if (!user) return res.status(400).send(__.error('This email is not registered'));
+    const token = __.generateRandom(6);
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
 
-  const token = __.generateRandom(6);
-  user.resetPasswordToken = token;
-  user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
 
-  await user.save();
+    const smptpTransport = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: 'khand3826@gmail.com',
+        pass: 'RealMadrid123',
+      },
+    });
 
-  const smptpTransport = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: {
-      user: 'khand3826@gmail.com',
-      pass: 'RealMadrid123',
-    },
-  });
-
-  const mailOptions = {
-    to: req.bosd.email,
-    from: 'khand3826@gmail.com',
-    subject: 'Pepper account password reset',
-    text: `You are receiving this beacuse you (or someone else) have requested the reset of your 
+    const mailOptions = {
+      to: req.body.email,
+      from: 'khand3826@gmail.com',
+      subject: 'Pepper account password reset',
+      text: `You are receiving this beacuse you (or someone else) have requested the reset of your 
         Pepper account password. \n\n Your password reset token is ${token} \n\n
         If you did not request this, please ignore this email and your password remain unchnaged.`,
-  };
+    };
 
-  smptpTransport.sendMail(mailOptions, (err) => {
-    if (err) return res.status(400).send(__.error('There was a problem resettign your password.'));
-    res.status(200).send(__.success('An email has been send to reset your password'));
-  });
+    await smptpTransport.sendMail(mailOptions);
+
+    return successResponse(req, res, 'An email has been send to reset your password');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const resetPassword2 = async (req, res) => {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const newPassword = await bcrypt.hash(req.body.password, salt);
+
+    await User.updateOne({ email: req.body.email }, {
+      $set: { password: newPassword },
+    });
+
+    return successResponse(req, res, 'Password has been reset');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const resetPassword = async (req, res) => {
