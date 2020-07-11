@@ -1,5 +1,25 @@
 const Joi = require('joi');
 
+const successResponse = (req, res, data, code = 200) => res.send({
+  code,
+  data,
+  status: true,
+});
+
+const errorResponse = (
+  req,
+  res,
+  errorMessage = 'Something went wrong',
+  code = 500,
+  error = {},
+) => res.status(code).json({
+  code,
+  errorMessage,
+  error,
+  data: null,
+  status: false,
+});
+
 const error = msg => ({
   status: 'error',
   msg,
@@ -84,6 +104,8 @@ const generateRandom = (length) => {
 };
 
 module.exports = {
+  successResponse,
+  errorResponse,
   error,
   success,
   validate,
