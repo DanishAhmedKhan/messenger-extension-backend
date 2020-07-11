@@ -1,5 +1,6 @@
 /* eslint-disable no-underscore-dangle */
-const express = require('express');
+import { successResponse, errorResponse } from '../helpers/appUtils';
+
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const Joi = require('joi');
@@ -8,9 +9,6 @@ const fs = require('fs');
 const base64Img = require('base64-img');
 const __ = require('../helpers/appUtils');
 const User = require('../models/User');
-const auth = require('../middlewares/auth');
-
-const router = express.Router();
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -38,36 +36,33 @@ const upload = multer({
   fileFilter,
 });
 
+// basic APIs
+export const signup = async (req, res) => {
+  try {
+    let user;
+    user = await User.findOne({ email: req.body.email });
+    if (user) return errorResponse(req, res, 'Email already registered !', 400);
 
-const signup = async (req, res) => {
-  const error = __.validate(req.body, {
-    email: Joi.string().email().required(),
-    password: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+    user = {
+      email: req.body.email,
+      password: req.body.password,
+    };
 
-  let user;
-  user = await User.findOne({ email: req.body.email });
-  if (user) return res.status(400).send(__.error('Email already registered'));
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
 
-  user = {
-    email: req.body.email,
-    password: req.body.password,
-  };
+    const newUser = new User(user);
+    await newUser.save();
+    const authToken = newUser.generateAuthToken();
 
-  const salt = await bcrypt.genSalt(10);
-  user.password = await bcrypt.hash(user.password, salt);
-
-  const newUser = new User(user);
-  await newUser.save();
-  const authToken = newUser.generateAuthToken();
-
-  res.header('x-user-auth-token', authToken)
-    .status(200)
-    .send(__.success('Signed up.'));
+    res.header('x-user-auth-token', authToken);
+    return successResponse(req, res, 'Signed up.');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   const error = __.validate(req.body, {
     email: Joi.string().email().required(),
     password: Joi.string().required(),
@@ -86,7 +81,7 @@ const login = async (req, res) => {
     .send(__.success('Loged in.'));
 };
 
-const resetPassword2 = async (req, res) => {
+export const resetPassword2 = async (req, res) => {
   const error = __.validate(req.body, {
     email: Joi.string().required(),
     password: Joi.string().required(),
@@ -103,7 +98,7 @@ const resetPassword2 = async (req, res) => {
   res.status(200).send(__.success('Password has been reset'));
 };
 
-const forgotPassword = async (req, res) => {
+export const forgotPassword = async (req, res) => {
   const error = __.validate(req.body, {
     email: Joi.string().email().required(),
   });
@@ -141,7 +136,7 @@ const forgotPassword = async (req, res) => {
   });
 };
 
-const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
   const error = __.validate(req.body, {
     email: Joi.string().email().required(),
     token: Joi.string().required(),
@@ -168,7 +163,14 @@ const resetPassword = async (req, res) => {
   res.status(200).send(__.success('Password has been reset successfully'));
 };
 
-const addTag = async (req, res) => {
+// load user Data
+export const loadData = async (req, res) => {
+  const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
+  res.status(200).send(__.success({ tags, friends, templates }));
+};
+
+// Tag APIs
+export const addTag = async (req, res) => {
   const error = __.validate(req.body, {
     name: Joi.string().required(),
     color: Joi.string().required(),
@@ -187,7 +189,7 @@ const addTag = async (req, res) => {
   res.status(200).send(__.success('Tags added'));
 };
 
-const removeTag = async (req, res) => {
+export const removeTag = async (req, res) => {
   const error = __.validate(req.body, {
     name: Joi.string().required(),
   });
@@ -206,12 +208,12 @@ const removeTag = async (req, res) => {
   res.status(200).send(__.success('Tag removed'));
 };
 
-const getAllTags = async (req, res) => {
+export const getAllTags = async (req, res) => {
   const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
   return res.status(200).send(__.success(tags));
 };
 
-const addTagToFriend = async (req, res) => {
+export const addTagToFriend = async (req, res) => {
   const error = __.validate(req.body, {
     friendId: Joi.string().required(),
     friendName: Joi.string().required(),
@@ -242,6 +244,63 @@ const addTagToFriend = async (req, res) => {
   }
 
   res.status(200).send(__.success('Tag added to friend'));
+};
+
+export const changeTag = async (req, res) => {
+  const error = __.validate(req.body, {
+    oldTag: Joi.string().required(),
+    newTag: Joi.string().required(),
+  });
+  if (error) return res.status(400).send(__.error(error.details[0].message));
+
+  await User.updateOne({ _id: req.user._id, 'tags.name': req.body.oldTag }, {
+    $set: { 'tags.$.name': req.body.newTag },
+  });
+
+  await User.updateOne({ _id: req.user._id }, {
+    $set: { 'friends.$[element].tag': req.body.newTag },
+  }, {
+    arrayFilters: [{ 'element.tag': req.body.oldTag }],
+  });
+
+  res.status(200).send(__.success('Tag changed'));
+};
+
+export const changeTagColor = async (req, res) => {
+  const error = __.validate(req.body, {
+    tag: Joi.string().required(),
+    color: Joi.string().required(),
+  });
+  if (error) return res.status(400).send(__.error(error.details[0].message));
+
+  await User.updateOne({ _id: req.user._id, 'tags.name': req.body.tag }, {
+    $set: { 'tags.$.color': req.body.color },
+  });
+
+  res.status(200).send(__.success('Tag color changed'));
+};
+
+export const changeTagOrder = async (req, res) => {
+  const error = __.validate(req.body, {
+    i1: Joi.number().required(),
+    i2: Joi.number().required(),
+  });
+  if (error) return res.status(400).send(__.error(error.details[0].message));
+
+  const i1 = Number(req.body.i1);
+  const i2 = Number(req.body.i2);
+
+  const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
+
+  const tmp = tags[i1];
+  tags.splice(i1, 1);
+  tags.splice(i2, 0, tmp);
+
+  await User.updateOne({ _id: req.user._id }, {
+    $set: { tags },
+  });
+
+  res.status(200).send(__.success('Tags order changed'));
 };
 
 // const updateImageUrlOfFriend = async (req, res) => {
@@ -280,7 +339,8 @@ const addTagToFriend = async (req, res) => {
 //     res.status(200).send(__.success('Tag added to friend'));
 // };
 
-const removeFriend = async (req, res) => {
+// Friend APIs
+export const removeFriend = async (req, res) => {
   const error = __.validate(req.body, {
     friendName: Joi.string().required(),
   });
@@ -293,7 +353,7 @@ const removeFriend = async (req, res) => {
   res.status(200).send(__.success('Removed friend'));
 };
 
-const removeMultipleFriends = async (req, res) => {
+export const removeMultipleFriends = async (req, res) => {
   const error = __.validate(req.body, {
     friendsName: Joi.array().items(Joi.string()),
   });
@@ -311,17 +371,12 @@ const removeMultipleFriends = async (req, res) => {
   res.status(200).send(__.success('Removed multiple friends'));
 };
 
-const getFriendList = async (req, res) => {
+export const getFriendList = async (req, res) => {
   const { friends } = await User.findOne({ _id: req.user._id }, 'friends');
   res.status(200).send(__.success(friends));
 };
 
-const loadData = async (req, res) => {
-  const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
-  res.status(200).send(__.success({ tags, friends, templates }));
-};
-
-const updateTagsAndFriends = async (req, res) => {
+export const updateTagsAndFriends = async (req, res) => {
   const error = __.validate(req.body, {
     tags: Joi.array().items(Joi.object().keys({
       name: Joi.string(),
@@ -344,7 +399,7 @@ const updateTagsAndFriends = async (req, res) => {
   req.status(200).send(__.success('Updated tags and friends'));
 };
 
-const addNoteToFriend = async (req, res) => {
+export const addNoteToFriend = async (req, res) => {
   console.log(req.body);
   const error = __.validate(req.body, {
     friendName: Joi.string().required(),
@@ -361,7 +416,7 @@ const addNoteToFriend = async (req, res) => {
   res.status(200).send(__.success('Added note to friend'));
 };
 
-const removeNoteFromFriend = async (req, res) => {
+export const removeNoteFromFriend = async (req, res) => {
   const error = __.validate(req.body, {
     friendName: Joi.string().required(),
     note: Joi.string().required(),
@@ -377,19 +432,8 @@ const removeNoteFromFriend = async (req, res) => {
   res.status(200).send(__.success('Removed note from friend'));
 };
 
-const addMessage = async (req, res) => {
-  const error = __.validate(req.body, {
-    message: Joi.string().required(),
-  });
-
-  await User.updateOne({ _id: req.user._id }, {
-    $push: { messages: req.body.message },
-  });
-
-  res.status(200).send(__.success('Message added'));
-};
-
-const addTemplate = async (req, res) => {
+// template APIs
+export const addTemplate = async (req, res) => {
   const error = __.validate(req.body, {
     template: Joi.string().required(),
   });
@@ -402,7 +446,7 @@ const addTemplate = async (req, res) => {
   return res.status(200).send(__.success('New template added'));
 };
 
-const removeTemplate = async (req, res) => {
+export const removeTemplate = async (req, res) => {
   const error = __.validate(req.body, {
     template: Joi.string().required(),
   });
@@ -415,23 +459,7 @@ const removeTemplate = async (req, res) => {
   res.status(200).send(__.success('Removed template'));
 };
 
-const addMessageToTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-    message: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
-    $push: {
-      'templates.$.messages': req.body.message,
-    },
-  });
-
-  res.status(200).send(__.success('Message added to template'));
-};
-
-const addImageToTemplate = async (req, res) => {
+export const addImageToTemplate = async (req, res) => {
   const error = __.validate(req.body, {
     imageBase64: Joi.string().required(),
     template: Joi.string().required(),
@@ -473,63 +501,7 @@ const addImageToTemplate = async (req, res) => {
   }
 };
 
-const removeMessageFromTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-    message: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
-    $pull: {
-      'templates.$.messages': req.body.message,
-    },
-  });
-
-  if (req.body.message.indexOf('--template--') >= 0) {
-    fs.unlink(`public/temp/${req.body.message}`, () => {
-      console.log('File deleted');
-    });
-  }
-
-  res.status(200).send(__.success('Message removed from template'));
-};
-
-const changeTag = async (req, res) => {
-  const error = __.validate(req.body, {
-    oldTag: Joi.string().required(),
-    newTag: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id, 'tags.name': req.body.oldTag }, {
-    $set: { 'tags.$.name': req.body.newTag },
-  });
-
-  await User.updateOne({ _id: req.user._id }, {
-    $set: { 'friends.$[element].tag': req.body.newTag },
-  }, {
-    arrayFilters: [{ 'element.tag': req.body.oldTag }],
-  });
-
-  res.status(200).send(__.success('Tag changed'));
-};
-
-const changeTagColor = async (req, res) => {
-  const error = __.validate(req.body, {
-    tag: Joi.string().required(),
-    color: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id, 'tags.name': req.body.tag }, {
-    $set: { 'tags.$.color': req.body.color },
-  });
-
-  res.status(200).send(__.success('Tag color changed'));
-};
-
-const changeTemplateOrder = async (req, res) => {
+export const changeTemplateOrder = async (req, res) => {
   const error = __.validate(req.body, {
     i1: Joi.number().integer().required(),
     i2: Joi.number().integer().required(),
@@ -582,7 +554,93 @@ const changeTemplateOrder = async (req, res) => {
   // res.status(200).send(__.success('Template order changed'));
 };
 
-const changeMessageOrder = async (req, res) => {
+export const changeTemplate = async (req, res) => {
+  const error = __.validate(req.body, {
+    oldTemplate: Joi.string().required(),
+    newTemplate: Joi.string().required(),
+  });
+  if (error) return res.status(400).send(__.error.details[0].message);
+
+  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.oldTemplate }, {
+    $set: {
+      'templates.$.name': req.body.newTemplate,
+    },
+  });
+
+  res.status(200).send(__.success('Template changed'));
+};
+
+
+// Message APIs
+export const addMessage = async (req, res) => {
+  const error = __.validate(req.body, {
+    message: Joi.string().required(),
+  });
+
+  await User.updateOne({ _id: req.user._id }, {
+    $push: { messages: req.body.message },
+  });
+
+  res.status(200).send(__.success('Message added'));
+};
+
+export const changeMessage = async (req, res) => {
+  const error = __.validate(req.body, {
+    index: Joi.number().required(),
+    template: Joi.string().required(),
+    newMessage: Joi.string().required(),
+  });
+  if (error) return res.status(400).send(__.error(error.details[0].message));
+
+  await User.updateOne({
+    _id: req.user._id,
+    'templates.name': req.body.template,
+  }, {
+    $set: { [`templates.$.messages.${req.body.index}`]: req.body.newMessage },
+  });
+
+  res.status(200).send(__.success('Message changed'));
+};
+
+export const removeMessageFromTemplate = async (req, res) => {
+  const error = __.validate(req.body, {
+    template: Joi.string().required(),
+    message: Joi.string().required(),
+  });
+  if (error) return res.status(400).send(__.error(error.details[0].message));
+
+  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+    $pull: {
+      'templates.$.messages': req.body.message,
+    },
+  });
+
+  if (req.body.message.indexOf('--template--') >= 0) {
+    fs.unlink(`public/temp/${req.body.message}`, () => {
+      console.log('File deleted');
+    });
+  }
+
+  res.status(200).send(__.success('Message removed from template'));
+};
+
+export const addMessageToTemplate = async (req, res) => {
+  const error = __.validate(req.body, {
+    template: Joi.string().required(),
+    message: Joi.string().required(),
+  });
+  if (error) return res.status(400).send(__.error(error.details[0].message));
+
+  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+    $push: {
+      'templates.$.messages': req.body.message,
+    },
+  });
+
+  res.status(200).send(__.success('Message added to template'));
+};
+
+export const changeMessageOrder = async (req, res) => {
   const error = __.validate(req.body, {
     template: Joi.string().required(),
     i1: Joi.number().integer().required(),
@@ -610,91 +668,3 @@ const changeMessageOrder = async (req, res) => {
 
   res.status(200).send(__.success('Messages order changed'));
 };
-
-const changeTagOrder = async (req, res) => {
-  const error = __.validate(req.body, {
-    i1: Joi.number().required(),
-    i2: Joi.number().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  const i1 = Number(req.body.i1);
-  const i2 = Number(req.body.i2);
-
-  const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
-
-  const tmp = tags[i1];
-  tags.splice(i1, 1);
-  tags.splice(i2, 0, tmp);
-
-  await User.updateOne({ _id: req.user._id }, {
-    $set: { tags },
-  });
-
-  res.status(200).send(__.success('Tags order changed'));
-};
-
-const changeTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    oldTemplate: Joi.string().required(),
-    newTemplate: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error.details[0].message);
-
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.oldTemplate }, {
-    $set: {
-      'templates.$.name': req.body.newTemplate,
-    },
-  });
-
-  res.status(200).send(__.success('Template changed'));
-};
-
-const changeMessage = async (req, res) => {
-  const error = __.validate(req.body, {
-    index: Joi.number().required(),
-    template: Joi.string().required(),
-    newMessage: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({
-    _id: req.user._id,
-    'templates.name': req.body.template,
-  }, {
-    $set: { [`templates.$.messages.${req.body.index}`]: req.body.newMessage },
-  });
-
-  res.status(200).send(__.success('Message changed'));
-};
-
-
-router.post('/signup', signup);
-router.post('/login', login);
-router.post('/forgotPassword', forgotPassword);
-router.post('/resetPassword', resetPassword2);
-router.post('/addTag', auth, addTag);
-router.post('/removeTag', auth, removeTag);
-router.post('/getAllTags', auth, getAllTags);
-router.post('/addTagToFriend', auth, addTagToFriend);
-router.post('/removeFriend', auth, removeFriend);
-router.post('/getFriendList', auth, getFriendList);
-router.post('/loadData', auth, loadData);
-router.post('/updateTagsAndFriends', auth, updateTagsAndFriends);
-router.post('/addNoteToFriend', auth, addNoteToFriend);
-router.post('/removeNoteFromFriend', auth, removeNoteFromFriend);
-router.post('/addMessage', auth, addMessage);
-router.post('/removeTemplate', auth, removeTemplate);
-router.post('/addTemplate', auth, addTemplate);
-router.post('/addMessageToTemplate', auth, addMessageToTemplate);
-router.post('/addImageToTemplate', auth, addImageToTemplate);
-router.post('/removeMessageFromTemplate', auth, removeMessageFromTemplate);
-router.post('/changeTag', auth, changeTag);
-router.post('/changeTagColor', auth, changeTagColor);
-router.post('/changeTemplateOrder', auth, changeTemplateOrder);
-router.post('/changeMessageOrder', auth, changeMessageOrder);
-router.post('/changeTagOrder', auth, changeTagOrder);
-router.post('/changeTemplate', auth, changeTemplate);
-router.post('/changeMessage', auth, changeMessage);
-
-module.exports = router;
