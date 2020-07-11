@@ -129,172 +129,169 @@ export const resetPassword2 = async (req, res) => {
   }
 };
 
-export const resetPassword = async (req, res) => {
-  const error = __.validate(req.body, {
-    email: Joi.string().email().required(),
-    token: Joi.string().required(),
-    password: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+// export const resetPassword = async (req, res) => {
+//   const error = __.validate(req.body, {
+//     email: Joi.string().email().required(),
+//     token: Joi.string().required(),
+//     password: Joi.string().required(),
+//   });
+//   if (error) return res.status(400).send(__.error(error.details[0].message));
 
-  const user = await User.findOne({ email: req.bosy.email }, 'resetPasswordToken resetPasswordExpires');
-  if (!user) return res.status(400).send(__.error('This email is not registered'));
+//   const user = await User.findOne({ email: req.bosy.email }, 'resetPasswordToken resetPasswordExpires');
+//   if (!user) return res.status(400).send(__.error('This email is not registered'));
 
-  if (user.resetPasswordExpires < Date.now()) { return res.status(400).send(__.error('Reset token has been expired')); }
+//   if (user.resetPasswordExpires < Date.now()) { return res.status(400).send(__.error('Reset token has been expired')); }
 
-  if (user.resetPasswordToken != req.body.token) { return res.status(400).send(__.error('Reset token is invalid')); }
+//   if (user.resetPasswordToken != req.body.token) { return res.status(400).send(__.error('Reset token is invalid')); }
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(req.body.password, salt);
+//   const salt = await bcrypt.genSalt(10);
+//   const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
-  await User.update({ email: req.body.email }, {
-    $set: {
-      password: hashedPassword,
-    },
-  });
+//   await User.update({ email: req.body.email }, {
+//     $set: {
+//       password: hashedPassword,
+//     },
+//   });
 
-  res.status(200).send(__.success('Password has been reset successfully'));
-};
+//   res.status(200).send(__.success('Password has been reset successfully'));
+// };
 
 // load user Data
 export const loadData = async (req, res) => {
-  const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
-  res.status(200).send(__.success({ tags, friends, templates }));
+  try {
+    const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
+    // res.status(200).send(__.success({ tags, friends, templates }));
+    return successResponse(req, res, { tags, friends, templates });
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 // Tag APIs
 export const addTag = async (req, res) => {
-  const error = __.validate(req.body, {
-    name: Joi.string().required(),
-    color: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id }, {
-    $push: {
-      tags: {
-        name: req.body.name,
-        color: req.body.color,
-      },
-    },
-  });
-
-  res.status(200).send(__.success('Tags added'));
-};
-
-export const removeTag = async (req, res) => {
-  const error = __.validate(req.body, {
-    name: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id }, {
-    $pull: { tags: { name: req.body.name } },
-  });
-
-  await User.updateOne({ _id: req.user._id }, {
-    $set: { 'friends.$[element].tag': '...' },
-  }, {
-    arrayFilters: [{ 'element.tag': req.body.name }],
-  });
-
-  res.status(200).send(__.success('Tag removed'));
-};
-
-export const getAllTags = async (req, res) => {
-  const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
-  return res.status(200).send(__.success(tags));
-};
-
-export const addTagToFriend = async (req, res) => {
-  const error = __.validate(req.body, {
-    friendId: Joi.string().required(),
-    friendName: Joi.string().required(),
-    tag: Joi.string().required(),
-    imageUrl: Joi.string().required(),
-  });
-  console.log(error);
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-  const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
-    $set: {
-      'friends.$.name': req.body.friendName,
-      'friends.$.tag': req.body.tag,
-      'friends.$.imageUrl': req.body.imageUrl,
-    },
-  });
-
-  if (result.nModified == 0) {
+  try {
     await User.updateOne({ _id: req.user._id }, {
       $push: {
-        friends: {
-          id: req.body.friendId,
-          name: req.body.friendName,
-          tag: req.body.tag,
-          imageUrl: req.body.imageUrl,
+        tags: {
+          name: req.body.name,
+          color: req.body.color,
         },
       },
     });
-  }
 
-  res.status(200).send(__.success('Tag added to friend'));
+    return successResponse(req, res, 'Tags added');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const removeTag = async (req, res) => {
+  try {
+    await User.updateOne({ _id: req.user._id }, {
+      $pull: { tags: { name: req.body.name } },
+    });
+
+    await User.updateOne({ _id: req.user._id }, {
+      $set: { 'friends.$[element].tag': '...' },
+    }, {
+      arrayFilters: [{ 'element.tag': req.body.name }],
+    });
+
+    return successResponse(req, res, 'Tag removed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const getAllTags = async (req, res) => {
+  try {
+    const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
+    return successResponse(req, res, tags);
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const addTagToFriend = async (req, res) => {
+  try {
+    const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
+      $set: {
+        'friends.$.name': req.body.friendName,
+        'friends.$.tag': req.body.tag,
+        'friends.$.imageUrl': req.body.imageUrl,
+      },
+    });
+
+    if (result.nModified === 0) {
+      await User.updateOne({ _id: req.user._id }, {
+        $push: {
+          friends: {
+            id: req.body.friendId,
+            name: req.body.friendName,
+            tag: req.body.tag,
+            imageUrl: req.body.imageUrl,
+          },
+        },
+      });
+    }
+
+    return successResponse(req, res, 'Tag added to friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const changeTag = async (req, res) => {
-  const error = __.validate(req.body, {
-    oldTag: Joi.string().required(),
-    newTag: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id, 'tags.name': req.body.oldTag }, {
+      $set: { 'tags.$.name': req.body.newTag },
+    });
 
-  await User.updateOne({ _id: req.user._id, 'tags.name': req.body.oldTag }, {
-    $set: { 'tags.$.name': req.body.newTag },
-  });
+    await User.updateOne({ _id: req.user._id }, {
+      $set: { 'friends.$[element].tag': req.body.newTag },
+    }, {
+      arrayFilters: [{ 'element.tag': req.body.oldTag }],
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $set: { 'friends.$[element].tag': req.body.newTag },
-  }, {
-    arrayFilters: [{ 'element.tag': req.body.oldTag }],
-  });
-
-  res.status(200).send(__.success('Tag changed'));
+    return successResponse(req, res, 'Tag changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const changeTagColor = async (req, res) => {
-  const error = __.validate(req.body, {
-    tag: Joi.string().required(),
-    color: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id, 'tags.name': req.body.tag }, {
+      $set: { 'tags.$.color': req.body.color },
+    });
 
-  await User.updateOne({ _id: req.user._id, 'tags.name': req.body.tag }, {
-    $set: { 'tags.$.color': req.body.color },
-  });
-
-  res.status(200).send(__.success('Tag color changed'));
+    return successResponse(req, res, 'Tag color changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const changeTagOrder = async (req, res) => {
-  const error = __.validate(req.body, {
-    i1: Joi.number().required(),
-    i2: Joi.number().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    const i1 = Number(req.body.i1);
+    const i2 = Number(req.body.i2);
 
-  const i1 = Number(req.body.i1);
-  const i2 = Number(req.body.i2);
+    const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
 
-  const { tags } = await User.findOne({ _id: req.user._id }, 'tags');
+    const tmp = tags[i1];
+    tags.splice(i1, 1);
+    tags.splice(i2, 0, tmp);
 
-  const tmp = tags[i1];
-  tags.splice(i1, 1);
-  tags.splice(i2, 0, tmp);
+    await User.updateOne({ _id: req.user._id }, {
+      $set: { tags },
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $set: { tags },
-  });
-
-  res.status(200).send(__.success('Tags order changed'));
+    return successResponse(req, res, 'Tags order changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
+
 
 // const updateImageUrlOfFriend = async (req, res) => {
 //     console.log(req.body);

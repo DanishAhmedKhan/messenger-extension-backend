@@ -14,12 +14,12 @@ router.post('/resetPassword', validate(userValidator.resetPassword2), userContro
 
 // tag related routes
 router.post('/addTag', auth, validate(userValidator.addTag), userController.addTag);
-router.post('/removeTag', auth, userController.removeTag);
+router.post('/removeTag', auth, validate(userValidator.removeTag), userController.removeTag);
 router.post('/getAllTags', auth, userController.getAllTags);
-router.post('/addTagToFriend', auth, userController.addTagToFriend);
-router.post('/changeTag', auth, userController.changeTag);
-router.post('/changeTagColor', auth, userController.changeTagColor);
-router.post('/changeTagOrder', auth, userController.changeTagOrder);
+router.post('/addTagToFriend', auth, validate(userValidator.addTagToFriend), userController.addTagToFriend);
+router.post('/changeTag', auth, validate(userValidator.changeTag), userController.changeTag);
+router.post('/changeTagColor', auth, validate(userValidator.changeTagColor), userController.changeTagColor);
+router.post('/changeTagOrder', auth, validate(userValidator.changeTagOrder), userController.changeTagOrder);
 
 // load user data
 router.post('/loadData', auth, userController.loadData);
