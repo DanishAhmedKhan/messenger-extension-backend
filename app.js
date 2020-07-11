@@ -6,7 +6,8 @@ import helmet from 'helmet';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import ip from 'ip';
-import userApi from './src/controllers/user';
+import userRoutes from './src/routes/user';
+import errorHandler from './src/middlewares/errorHandler';
 
 
 dotenv.config();
@@ -44,10 +45,11 @@ app.use('/test', async (req, res) => {
 });
 
 
-app.use('/api/user', userApi);
+app.use('/api/user', userRoutes);
 
 // Image static routing
 app.use(express.static(`${__dirname}/public`));
+app.use(errorHandler);
 
 // connecting to the mongoDB Atlas cloud storage
 console.log(`Trying to connect to mongodb ${dbUrl}`);
