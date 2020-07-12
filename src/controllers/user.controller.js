@@ -160,7 +160,6 @@ export const resetPassword2 = async (req, res) => {
 export const loadData = async (req, res) => {
   try {
     const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
-    // res.status(200).send(__.success({ tags, friends, templates }));
     return successResponse(req, res, { tags, friends, templates });
   } catch (error) {
     return errorResponse(req, res, error.message);
@@ -332,11 +331,9 @@ export const changeTagOrder = async (req, res) => {
 // Friend APIs
 export const removeFriend = async (req, res) => {
   try {
-    console.log(':::::req.body.friendName::::::', req.body.friendName);
     const data = await User.updateOne({ _id: req.user._id }, {
       $pull: { friends: { name: req.body.friendName } },
     });
-    console.log('::::data:::::', data);
     return successResponse(req, res, 'Removed friend');
   } catch (error) {
     return errorResponse(req, res, error.message);
@@ -414,237 +411,170 @@ export const removeNoteFromFriend = async (req, res) => {
 
 // template APIs
 export const addTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id }, {
+      $push: { templates: { name: req.body.template } },
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $push: { templates: { name: req.body.template } },
-  });
-
-  return res.status(200).send(__.success('New template added'));
+    return successResponse(req, res, 'New template added');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const removeTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({ _id: req.user._id }, {
+      $pull: { templates: { name: req.body.template } },
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $pull: { templates: { name: req.body.template } },
-  });
+    return successResponse(req, res, 'Removed template');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
 
-  res.status(200).send(__.success('Removed template'));
+export const addMessageToTemplate = async (req, res) => {
+  try {
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+      $push: {
+        'templates.$.messages': req.body.message,
+      },
+    });
+
+    return successResponse(req, res, 'Message added to template');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const addImageToTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    imageBase64: Joi.string().required(),
-    template: Joi.string().required(),
-    imageName: Joi.string().required(),
-    imageType: Joi.string().required(),
-  });
-  if (error) return res.status(200).send(__.error(error.details[0].message));
-
-  // let base64 = req.body.imageBase64.replace('data:' + req.body.imageType + + ';base64,', '');
-
-  if (req.body.imageName.indexOf('--template--') < 0) { return res.status(400).send(__.error('Image name invalid')); }
-
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
-    $push: {
-      'templates.$.messages': req.body.imageName,
-    },
-  });
-
   try {
-    // let b = req.body.imageBase64.substring(base64Img.indexOf(',') + 1);
-    // console.log(b);
-    // let buffer = Buffer.from(b, 'base64');
-    // Jimp.read(buffer, (err, image) => {
-    //     if (err)
-    //         console.log(err);
-    //     else {
-    //         image.getBase64(Jimp.MIME_PNG, function(err, src) {
+    // let base64 = req.body.imageBase64.replace('data:' + req.body.imageType + + ';base64,', '');
+    if (req.body.imageName.indexOf('--template--') < 0) {
+      return errorResponse(req, res, 'Image name invalid', 400);
+    }
 
-    //         }).write('hello.png');
-    //     }
-    // });
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+      $push: {
+        'templates.$.messages': req.body.imageName,
+      },
+    });
 
-    base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0],
-      (err, filepath) => {
-        if (!err) res.status(200).send(__.success('Images uploaded to template'));
-      });
-  } catch (e) {
-    res.status(400).send(__.error('Base64 data invalid'));
+    await base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0]);
+    // if (!err) res.status(200).send(__.success('Images uploaded to template'));
+    return successResponse(req, res, 'Images uploaded to template');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
   }
 };
 
 export const changeTemplateOrder = async (req, res) => {
-  const error = __.validate(req.body, {
-    i1: Joi.number().integer().required(),
-    i2: Joi.number().integer().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    const i1 = Number(req.body.i1);
+    const i2 = Number(req.body.i2);
 
-  const i1 = Number(req.body.i1);
-  const i2 = Number(req.body.i2);
+    const { templates } = await User.findOne({ _id: req.user._id }, 'templates');
 
-  const { templates } = await User.findOne({ _id: req.user._id }, 'templates');
+    const tmp = templates[i1];
+    templates.splice(i1, 1);
+    templates.splice(i2, 0, tmp);
 
-  const tmp = templates[i1];
-  templates.splice(i1, 1);
-  templates.splice(i2, 0, tmp);
+    await User.updateOne({ _id: req.user._id }, {
+      $set: { templates },
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $set: { templates },
-  });
-
-  res.status(200).send(__.success('Templates reordered'));
-
-
-  // const result = await User.findOne({ _id: req.user._id }, {
-  //     array: { $slice: [req.body.i1, 1] }
-  // });
-  // let template = result.templates[0];
-
-  // await User.updateOne({ _id: req.user._id }, {
-  //     $unset: { ['templates.' + i1]: 1 }
-  // });
-  // await User.updateOne({ _id: req.user._id }, {
-  //     $pull: {
-  //         templates: {
-  //             $in: [ null ]
-  //         }
-  //     }
-  // });
-
-  // await User.updateOne({ _id: req.user._id }, {
-  //     $push: {
-  //         templates: {
-  //             $each: [
-  //                 template
-  //             ],
-  //             $position: i2
-  //         }
-  //     }
-  // });
-
-  // res.status(200).send(__.success('Template order changed'));
+    return successResponse(req, res, 'Templates reordered');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const changeTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    oldTemplate: Joi.string().required(),
-    newTemplate: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error.details[0].message);
+  try {
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.oldTemplate }, {
+      $set: {
+        'templates.$.name': req.body.newTemplate,
+      },
+    });
 
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.oldTemplate }, {
-    $set: {
-      'templates.$.name': req.body.newTemplate,
-    },
-  });
-
-  res.status(200).send(__.success('Template changed'));
+    return successResponse(req, res, 'Template changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 
 // Message APIs
 export const addMessage = async (req, res) => {
-  const error = __.validate(req.body, {
-    message: Joi.string().required(),
-  });
+  try {
+    await User.updateOne({ _id: req.user._id }, {
+      $push: { messages: req.body.message },
+    });
 
-  await User.updateOne({ _id: req.user._id }, {
-    $push: { messages: req.body.message },
-  });
-
-  res.status(200).send(__.success('Message added'));
+    return successResponse(req, res, 'Message added');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const changeMessage = async (req, res) => {
-  const error = __.validate(req.body, {
-    index: Joi.number().required(),
-    template: Joi.string().required(),
-    newMessage: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    await User.updateOne({
+      _id: req.user._id,
+      'templates.name': req.body.template,
+    }, {
+      $set: { [`templates.$.messages.${req.body.index}`]: req.body.newMessage },
+    });
 
-  await User.updateOne({
-    _id: req.user._id,
-    'templates.name': req.body.template,
-  }, {
-    $set: { [`templates.$.messages.${req.body.index}`]: req.body.newMessage },
-  });
-
-  res.status(200).send(__.success('Message changed'));
+    return successResponse(req, res, 'Message changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };
 
 export const removeMessageFromTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-    message: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
-    $pull: {
-      'templates.$.messages': req.body.message,
-    },
-  });
-
-  if (req.body.message.indexOf('--template--') >= 0) {
-    fs.unlink(`public/temp/${req.body.message}`, () => {
-      console.log('File deleted');
+  try {
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+      $pull: {
+        'templates.$.messages': req.body.message,
+      },
     });
+
+    if (req.body.message.indexOf('--template--') >= 0) {
+      fs.unlink(`public/temp/${req.body.message}`, () => {
+        console.log('File deleted');
+      });
+    }
+
+    return successResponse(req, res, 'Message removed from template');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
   }
-
-  res.status(200).send(__.success('Message removed from template'));
-};
-
-export const addMessageToTemplate = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-    message: Joi.string().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
-
-  await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
-    $push: {
-      'templates.$.messages': req.body.message,
-    },
-  });
-
-  res.status(200).send(__.success('Message added to template'));
 };
 
 export const changeMessageOrder = async (req, res) => {
-  const error = __.validate(req.body, {
-    template: Joi.string().required(),
-    i1: Joi.number().integer().required(),
-    i2: Joi.number().integer().required(),
-  });
-  if (error) return res.status(400).send(__.error(error.details[0].message));
+  try {
+    const t = req.body.template;
+    const i1 = Number(req.body.i1);
+    const i2 = Number(req.body.i2);
 
-  const t = req.body.template;
-  const i1 = Number(req.body.i1);
-  const i2 = Number(req.body.i2);
+    const result = await User.findOne({ _id: req.user._id, 'templates.name': t },
+      { 'templates.$': 1 });
+    const { messages } = result.templates[0];
 
-  const result = await User.findOne({ _id: req.user._id, 'templates.name': t },
-    { 'templates.$': 1 });
-  const { messages } = result.templates[0];
+    const tmp = messages[i1];
+    messages.splice(i1, 1);
+    messages.splice(i2, 0, tmp);
 
-  const tmp = messages[i1];
-  messages.splice(i1, 1);
-  messages.splice(i2, 0, tmp);
+    await User.updateOne({ _id: req.user._id, 'templates.name': t }, {
+      $set: {
+        'templates.$.messages': messages,
+      },
+    });
 
-  await User.updateOne({ _id: req.user._id, 'templates.name': t }, {
-    $set: {
-      'templates.$.messages': messages,
-    },
-  });
-
-  res.status(200).send(__.success('Messages order changed'));
+    return successResponse(req, res, 'Messages order changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
 };

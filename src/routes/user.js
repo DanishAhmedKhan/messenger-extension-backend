@@ -38,15 +38,15 @@ router.post('/removeNoteFromFriend', auth, validate(userValidator.removeNoteFrom
 router.post('/addTemplate', auth, validate(userValidator.addTemplate), userController.addTemplate);
 router.post('/removeTemplate', auth, validate(userValidator.removeTemplate), userController.removeTemplate);
 router.post('/addMessageToTemplate', auth, validate(userValidator.addMessageToTemplate), userController.addMessageToTemplate);
-router.post('/addImageToTemplate', auth, validate(userValidator.addImageToTemplate), userController.addImageToTemplate);
+router.post('/addImageToTemplate', auth, validate(userValidator.addImageToTemplate), userController.addImageToTemplate); // needs S3 Change
 router.post('/removeMessageFromTemplate', auth, validate(userValidator.removeMessageFromTemplate), userController.removeMessageFromTemplate);
 router.post('/changeTemplateOrder', auth, validate(userValidator.changeTemplateOrder), userController.changeTemplateOrder);
 router.post('/changeTemplate', auth, validate(userValidator.changeTemplate), userController.changeTemplate);
 
 // message routes
-router.post('/addMessage', auth, userController.addMessage);
-router.post('/changeMessage', auth, userController.changeMessage);
-router.post('/changeMessageOrder', auth, userController.changeMessageOrder);
+router.post('/addMessage', auth, validate(userValidator.addMessage), userController.addMessage);
+router.post('/changeMessage', auth, validate(userValidator.changeMessage), userController.changeMessage);
+router.post('/changeMessageOrder', auth, validate(userValidator.changeMessageOrder), userController.changeMessageOrder);
 
 
 module.exports = router;
