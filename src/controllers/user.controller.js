@@ -159,7 +159,11 @@ export const resetPassword2 = async (req, res) => {
 // load user Data
 export const loadData = async (req, res) => {
   try {
-    const { tags, friends, templates } = await User.findOne({ _id: req.user._id }, 'tags friends templates');
+    const data = await User.findOne({ _id: req.user._id }, 'tags friends templates');
+    if (!data) {
+      return errorResponse(req, res, 'User not found!', 400);
+    }
+    const { tags, friends, templates } = data;
     return successResponse(req, res, { tags, friends, templates });
   } catch (error) {
     return errorResponse(req, res, error.message);
