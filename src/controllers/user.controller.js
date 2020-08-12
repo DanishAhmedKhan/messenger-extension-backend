@@ -465,8 +465,10 @@ export const addImageToTemplate = async (req, res) => {
       },
     });
 
-    await base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0]);
-    // if (!err) res.status(200).send(__.success('Images uploaded to template'));
+    base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0],
+      (err, filepath) => {
+        if (err) throw err;
+      });
     return successResponse(req, res, 'Images uploaded to template');
   } catch (error) {
     return errorResponse(req, res, error.message);
