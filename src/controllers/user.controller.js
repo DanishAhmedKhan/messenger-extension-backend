@@ -1,5 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 import { successResponse, errorResponse } from '../helpers/appUtils';
+import S3Store from '../helpers/fileUpload';
+
 
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
@@ -458,6 +460,15 @@ export const addImageToTemplate = async (req, res) => {
     if (req.body.imageName.indexOf('--template--') < 0) {
       return errorResponse(req, res, 'Image name invalid', 400);
     }
+    // Buffer.from(req.body.imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+    const file = {
+      name: req.body.imageName,
+      buffer: Buffer.from(req.body.imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64'),
+      mimetype: req.body.imageType,
+    };
+
+    const s3Store = new S3Store();
+    const link = await s3Store.multiUpload('images', file);
 
     await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
       $push: {
@@ -465,11 +476,11 @@ export const addImageToTemplate = async (req, res) => {
       },
     });
 
-    base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0],
-      (err, filepath) => {
-        if (err) throw err;
-      });
-    return successResponse(req, res, 'Images uploaded to template');
+    // base64Img.img(req.body.imageBase64, 'public/temp', req.body.imageName.split('.')[0],
+    //   (err, filepath) => {
+    //     if (err) throw err;
+    //   });
+    return successResponse(req, res, { msg: 'Images uploaded to template', link });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
