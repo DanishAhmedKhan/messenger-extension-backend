@@ -3,7 +3,7 @@ import AWS from 'aws-sdk';
 require('dotenv').config();
 
 export default class S3Store {
-  constructor(bucket = 'resources.seeradio.com') {
+  constructor(bucket = 'pepper-assets') {
     AWS.config.update({
       accessKeyId: process.env.accessKeyId,
       secretAccessKey: process.env.secretAccessKey,
@@ -15,11 +15,11 @@ export default class S3Store {
   async upload(key, file) {
     const params = {
       Bucket: this.bucket,
-      Key: `${key}/${file.uniquename}`,
+      Key: `${key}/${file.name}`,
       Body: file.buffer, // req.file.path
       ContentType: file.mimetype,
-      ResponseContentDisposition: `attachment; filename=${file.originalname}`,
-      // ContentEncoding: 'base64',
+      ResponseContentDisposition: `attachment; filename=${file.name}`,
+      ContentEncoding: 'base64',
       ACL: 'public-read',
     };
     return new Promise((res, rej) => this.s3.upload(params, (error, data) => {
