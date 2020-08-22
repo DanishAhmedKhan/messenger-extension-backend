@@ -109,6 +109,19 @@ export const updateTagsAndFriends = {
   },
 };
 
+export const updateFriendList = {
+  body: {
+    friendList: Joi.array().items(Joi.object().keys({
+      notes: Joi.array(),
+      id: Joi.string(),
+      uniqeId: Joi.number(),
+      imageUrl: Joi.string(),
+      name: Joi.string(),
+      tag: Joi.string(),
+    })),
+  },
+};
+
 export const addNoteToFriend = {
   body: {
     friendName: Joi.string().required(),

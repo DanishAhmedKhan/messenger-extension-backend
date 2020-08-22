@@ -27,6 +27,7 @@ router.post('/loadData', auth, userController.loadData);
 // friend routes
 router.post('/removeFriend', auth, validate(userValidator.removeFriend), userController.removeFriend); // needs change as depends on Name
 router.post('/updateTagsAndFriends', auth, validate(userValidator.updateTagsAndFriends), userController.updateTagsAndFriends);// not in use
+router.post('/updateFriendList', auth, validate(userValidator.updateFriendList), userController.updateFriendList);// to update entire friendList
 
 router.post('/getFriendList', auth, userController.getFriendList);
 

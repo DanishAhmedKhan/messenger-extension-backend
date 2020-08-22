@@ -30,6 +30,8 @@ const userSchema = new Schema({
     name: String,
     tag: String,
     imageUrl: String,
+    uniqeId: Number,
+    isSync: Boolean,
     notes: [String],
     _id: false,
   }],
@@ -38,6 +40,9 @@ const userSchema = new Schema({
     messages: [String],
     _id: false,
   }],
+  isDatasync: {
+    type: Boolean,
+  },
 });
 
 userSchema.methods.generateAuthToken = function () {

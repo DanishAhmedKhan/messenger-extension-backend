@@ -159,12 +159,16 @@ export const resetPassword2 = async (req, res) => {
 // load user Data
 export const loadData = async (req, res) => {
   try {
-    const data = await User.findOne({ _id: req.user._id }, 'tags friends templates');
+    const data = await User.findOne({ _id: req.user._id });
     if (!data) {
       return errorResponse(req, res, 'User not found!', 400);
     }
-    const { tags, friends, templates } = data;
-    return successResponse(req, res, { tags, friends, templates });
+    const {
+      tags, friends, templates, isDatasync,
+    } = data;
+    return successResponse(req, res, {
+      tags, friends, templates, isDatasync,
+    });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
@@ -347,7 +351,7 @@ export const removeFriend = async (req, res) => {
 export const removeMultipleFriends = async (req, res) => {
   try {
     const friendsArray = [];
-    for (let i = 0; i < req.body.friendsName.length; i++) {
+    for (let i = 0; i < req.body.friendsName.length; i += 1) {
       friendsArray.push({ name: req.body.friendsName[i], tag: '...' });
     }
 
@@ -380,6 +384,20 @@ export const updateTagsAndFriends = async (req, res) => {
     });
 
     return successResponse(req, res, 'Updated tags and friends');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const updateFriendList = async (req, res) => {
+  try {
+    const data = await User.updateOne({ _id: req.user._id }, {
+      $set: {
+        friends: req.body.friendList,
+      },
+    });
+
+    return successResponse(req, res, { msg: 'Updated friendList', data });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
