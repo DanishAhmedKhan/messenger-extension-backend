@@ -30,7 +30,7 @@ const userSchema = new Schema({
     name: String,
     tag: String,
     imageUrl: String,
-    uniqeId: Number,
+    uniqeId: String,
     isSync: Boolean,
     notes: [String],
     _id: false,

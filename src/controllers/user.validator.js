@@ -114,7 +114,7 @@ export const updateFriendList = {
     friendList: Joi.array().items(Joi.object().keys({
       notes: Joi.array(),
       id: Joi.string(),
-      uniqeId: Joi.number(),
+      uniqeId: Joi.string(),
       imageUrl: Joi.string(),
       name: Joi.string(),
       tag: Joi.string(),
