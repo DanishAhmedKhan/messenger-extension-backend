@@ -453,12 +453,25 @@ const removeMessageFromTemplate = async (req, res) => {
         message: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
+    // console.log(':::req.body.message:::', req.body.message);
 
-    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+
+    let updatedResponse = await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
         $pull: {
             'templates.$.messages': req.body.message
         }
     });
+    // console.log(':::updatedResponse:::', updatedResponse);
+    if (updatedResponse.nModified === 0) {
+        const msgToBeDeleted = String(req.body.message).replace(/'/g, "&#39;");
+        console.log(':::msgToBeDeleted:::', msgToBeDeleted);
+        updatedResponse = await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+            $pull: {
+                'templates.$.messages': msgToBeDeleted
+            }
+        });
+        // console.log('::::updatedResponse:::::', updatedResponse);
+    }
 
     if (req.body.message.indexOf('--template--') >= 0) {
         fs.unlink('public/temp/' + req.body.message, () => {
