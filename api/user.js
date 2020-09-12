@@ -217,14 +217,14 @@ const getAllTags = async (req, res) => {
 };
 
 const addTagToFriend = async (req, res) => {
-    console.log(req.body);
+    // console.log(req.body);
     const error = __.validate(req.body, {
         friendId: Joi.string().required(),
         friendName: Joi.string().required(),
         tag: Joi.string().required(),
         imageUrl: Joi.string().required(),
     });
-    console.log(error);
+    // console.log(error);
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
@@ -316,7 +316,7 @@ const updateTagsAndFriends = async (req, res) => {
 };
 
 const addNoteToFriend = async (req, res) => {
-    console.log(req.body);
+    // console.log(req.body);
     const error = __.validate(req.body, {
         friendName: Joi.string().required(),
         note: Joi.string().required(),
@@ -464,7 +464,7 @@ const removeMessageFromTemplate = async (req, res) => {
     // console.log(':::updatedResponse:::', updatedResponse);
     if (updatedResponse.nModified === 0) {
         const msgToBeDeleted = String(req.body.message).replace(/'/g, "&#39;");
-        console.log(':::msgToBeDeleted:::', msgToBeDeleted);
+        // console.log(':::msgToBeDeleted:::', msgToBeDeleted);
         updatedResponse = await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
             $pull: {
                 'templates.$.messages': msgToBeDeleted
