@@ -402,6 +402,32 @@ const addMessageToTemplate = async (req, res) => {
     res.status(200).send(__.success('Message added to template'));
 };  
 
+const removeEmptyMessageFromTemplate = async (req, res) => {
+    const error = __.validate(req.body, {
+        template: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+    try {
+        const templateTobeChecked = String(req.body.template);
+        const { templates } = await User.findOne({ _id: req.user._id }, 'templates');
+        if(templates && templates.length > 0) {
+            let newtemplates = templates;
+            newtemplates.forEach((tmp, index) => {
+                if(tmp.name === templateTobeChecked && tmp.messages && tmp.messages.length > 0) {
+                    newtemplates[index].messages = tmp.messages.filter(msg => msg != null);
+                }
+            });
+            await User.updateOne({ _id: req.user._id }, {
+                $set: { templates: newtemplates }
+            });
+        }
+        res.status(200).send(__.success('null Messages removed from template'));
+    } catch (error) {
+        console.log('::::error::::::', error);
+        res.status(400).send(__.error('Error'));
+    }
+}; 
+
 const addImageToTemplate = async (req, res) => {
     const error = __.validate(req.body, {
         imageBase64: Joi.string().required(),
@@ -683,5 +709,6 @@ router.post('/changeMessageOrder', auth, changeMessageOrder);
 router.post('/changeTagOrder', auth, changeTagOrder);
 router.post('/changeTemplate', auth, changeTemplate);
 router.post('/changeMessage', auth, changeMessage);
+router.post('/removeEmptyMessageFromTemplate', auth, removeEmptyMessageFromTemplate);
 
 module.exports = router;
