@@ -58,6 +58,15 @@ export const addTagToFriend = {
     friendName: Joi.string().required(),
     tag: Joi.string().required(),
     imageUrl: Joi.string().required(),
+    uniqeId: Joi.string(),
+    isSync: Joi.boolean(),
+  },
+};
+
+export const updateImgOfFriend = {
+  body: {
+    friendId: Joi.string().required(),
+    imageUrl: Joi.string().required(),
   },
 };
 

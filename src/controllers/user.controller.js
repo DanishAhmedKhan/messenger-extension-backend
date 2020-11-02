@@ -221,6 +221,18 @@ export const getAllTags = async (req, res) => {
 
 export const addTagToFriend = async (req, res) => {
   try {
+    if (req.body.uniqeId && req.body.isSync) {
+      await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
+        $set: {
+          'friends.$.name': req.body.friendName,
+          'friends.$.uniqeId': req.body.uniqeId,
+          'friends.$.isSync': req.body.isSync,
+          'friends.$.tag': req.body.tag,
+          'friends.$.imageUrl': req.body.imageUrl,
+        },
+      });
+      return successResponse(req, res, 'Tag added to friend');
+    }
     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
       $set: {
         'friends.$.name': req.body.friendName,
@@ -243,6 +255,20 @@ export const addTagToFriend = async (req, res) => {
     }
 
     return successResponse(req, res, 'Tag added to friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const updateImgOfFriend = async (req, res) => {
+  try {
+    const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
+      $set: {
+        'friends.$.imageUrl': req.body.imageUrl,
+      },
+    });
+
+    return successResponse(req, res, result);
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
@@ -394,9 +420,9 @@ export const updateFriendList = async (req, res) => {
     const data = await User.updateOne({ _id: req.user._id }, {
       $set: {
         friends: req.body.friendList,
+        isDatasync: true,
       },
     });
-
     return successResponse(req, res, { msg: 'Updated friendList', data });
   } catch (error) {
     return errorResponse(req, res, error.message);

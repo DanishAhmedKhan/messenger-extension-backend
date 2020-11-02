@@ -17,6 +17,7 @@ router.post('/addTag', auth, validate(userValidator.addTag), userController.addT
 router.post('/removeTag', auth, validate(userValidator.removeTag), userController.removeTag);
 router.post('/getAllTags', auth, userController.getAllTags);
 router.post('/addTagToFriend', auth, validate(userValidator.addTagToFriend), userController.addTagToFriend);
+router.post('/updateImgOfFriend', auth, validate(userValidator.updateImgOfFriend), userController.updateImgOfFriend);
 router.post('/changeTag', auth, validate(userValidator.changeTag), userController.changeTag);
 router.post('/changeTagColor', auth, validate(userValidator.changeTagColor), userController.changeTagColor);
 router.post('/changeTagOrder', auth, validate(userValidator.changeTagOrder), userController.changeTagOrder);
