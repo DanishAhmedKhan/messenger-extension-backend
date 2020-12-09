@@ -10,7 +10,7 @@ module.exports = {
               "messenger_extension_user_auth_token": "pepper123star"
           },
           env_production: {
-              "PORT": 4400,
+              "PORT": 3000,
               "NODE_ENV": "production",
               "messenger_extension_user_auth_token": "pepper123star"
           }
