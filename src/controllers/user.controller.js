@@ -222,7 +222,7 @@ export const getAllTags = async (req, res) => {
 export const addTagToFriend = async (req, res) => {
   try {
     if (req.body.uniqeId && req.body.isSync) {
-      await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
+      const updateResult = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
         $set: {
           'friends.$.name': req.body.friendName,
           'friends.$.uniqeId': req.body.uniqeId,
@@ -231,6 +231,20 @@ export const addTagToFriend = async (req, res) => {
           'friends.$.imageUrl': req.body.imageUrl,
         },
       });
+      if (updateResult.nModified === 0) {
+        await User.updateOne({ _id: req.user._id }, {
+          $push: {
+            friends: {
+              id: req.body.friendId,
+              name: req.body.friendName,
+              tag: req.body.tag,
+              imageUrl: req.body.imageUrl,
+              isSync: req.body.isSync,
+              uniqeId: req.body.uniqeId,
+            },
+          },
+        });
+      }
       return successResponse(req, res, 'Tag added to friend');
     }
     const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
@@ -241,7 +255,9 @@ export const addTagToFriend = async (req, res) => {
       },
     });
 
+    console.log(':::result====>',result)
     if (result.nModified === 0) {
+      console.log(':::Add NEw', typeof req.body.friendId)
       await User.updateOne({ _id: req.user._id }, {
         $push: {
           friends: {
