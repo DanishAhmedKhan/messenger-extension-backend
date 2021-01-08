@@ -382,7 +382,7 @@ export const changeTagOrder = async (req, res) => {
 export const removeFriend = async (req, res) => {
   try {
     const data = await User.updateOne({ _id: req.user._id }, {
-      $pull: { friends: { name: req.body.friendName } },
+      $pull: { friends: { id: req.body.friendId } },
     });
     return successResponse(req, res, 'Removed friend');
   } catch (error) {
