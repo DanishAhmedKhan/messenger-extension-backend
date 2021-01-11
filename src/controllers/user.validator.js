@@ -96,7 +96,7 @@ export const changeTagOrder = {
 export const removeFriend = {
   body: {
     friendName: Joi.string().required(),
-    friendId: Joi.string().required(),
+    friendId: Joi.string(),
   },
 };
 
