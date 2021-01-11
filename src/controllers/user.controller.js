@@ -255,9 +255,7 @@ export const addTagToFriend = async (req, res) => {
       },
     });
 
-    console.log(':::result====>',result)
     if (result.nModified === 0) {
-      console.log(':::Add NEw', typeof req.body.friendId)
       await User.updateOne({ _id: req.user._id }, {
         $push: {
           friends: {
