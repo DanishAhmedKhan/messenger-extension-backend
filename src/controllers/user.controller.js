@@ -400,13 +400,15 @@ export const updateTagsAndFriends = async (req, res) => {
 
 export const updateFriendList = async (req, res) => {
   try {
-    const data = await User.updateOne({ _id: req.user._id }, {
-      $set: {
-        friends: req.body.friendList,
-        isDatasync: true,
-      },
-    });
-    return successResponse(req, res, { msg: 'Updated friendList', data });
+    if (req.body.friendList.length > 0) {
+      await User.updateOne({ _id: req.user._id }, {
+        $set: {
+          friends: req.body.friendList,
+          isDatasync: true,
+        },
+      });
+    }
+    return successResponse(req, res, { msg: 'Updated friendList' });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
