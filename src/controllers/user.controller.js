@@ -400,7 +400,16 @@ export const updateTagsAndFriends = async (req, res) => {
 
 export const updateFriendList = async (req, res) => {
   try {
-    if (req.body.friendList && req.body.friendList.length > 0) {
+    const data = await User.findOne({ _id: req.user._id });
+    if (!data) {
+      return errorResponse(req, res, 'User not found!', 400);
+    }
+    const {
+      tags, friends, templates, isDatasync,
+    } = data;
+
+    if (friends && req.body.friendList && req.body.friendList.length > 0 
+      && friends.length === req.body.friendList.length) {
       await User.updateOne({ _id: req.user._id }, {
         $set: {
           friends: req.body.friendList,
