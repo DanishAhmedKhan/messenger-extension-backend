@@ -408,15 +408,15 @@ export const updateFriendList = async (req, res) => {
       tags, friends, templates, isDatasync,
     } = data;
 
-    if (friends && req.body.friendList && req.body.friendList.length > 0 
-      && friends.length === req.body.friendList.length) {
-      await User.updateOne({ _id: req.user._id }, {
-        $set: {
-          friends: req.body.friendList,
-          isDatasync: true,
-        },
-      });
-    }
+    // if (friends && req.body.friendList && req.body.friendList.length > 0 
+    //   && friends.length === req.body.friendList.length) {
+    //   await User.updateOne({ _id: req.user._id }, {
+    //     $set: {
+    //       friends: req.body.friendList,
+    //       isDatasync: true,
+    //     },
+    //   });
+    // }
     return successResponse(req, res, { msg: 'Updated friendList' });
   } catch (error) {
     return errorResponse(req, res, error.message);
