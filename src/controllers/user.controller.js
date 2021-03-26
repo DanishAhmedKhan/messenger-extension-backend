@@ -40,11 +40,11 @@ const upload = multer({
 export const signup = async (req, res) => {
   try {
     let user;
-    user = await User.findOne({ email: req.body.email });
+    user = await User.findOne({ email: String(req.body.email).toLowerCase() });
     if (user) return errorResponse(req, res, 'Email already registered !', 400);
 
     user = {
-      email: req.body.email,
+      email: String(req.body.email).toLowerCase(),
       password: req.body.password,
     };
 
@@ -64,7 +64,7 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.body.email }, 'password');
+    const user = await User.findOne({ email: String(req.body.email).toLowerCase() }, 'password');
     if (!user) return errorResponse(req, res, 'This email is not registered', 400);
 
     const validPassword = await bcrypt.compare(req.body.password, user.password);
@@ -342,13 +342,13 @@ export const changeTagOrder = async (req, res) => {
 // Friend APIs
 export const removeFriend = async (req, res) => {
   try {
-    if(req.body.friendId) {
+    if (req.body.friendId) {
       await User.updateOne({ _id: req.user._id }, {
         $pull: { friends: { id: req.body.friendId } },
       });
     } else {
       await User.updateOne({ _id: req.user._id }, {
-        $pull: { 'friends': { 'name': req.body.friendName } }
+        $pull: { friends: { name: req.body.friendName } },
       });
     }
     return successResponse(req, res, 'Removed friend');
@@ -408,7 +408,7 @@ export const updateFriendList = async (req, res) => {
       tags, friends, templates, isDatasync,
     } = data;
 
-    // if (friends && req.body.friendList && req.body.friendList.length > 0 
+    // if (friends && req.body.friendList && req.body.friendList.length > 0
     //   && friends.length === req.body.friendList.length) {
     //   await User.updateOne({ _id: req.user._id }, {
     //     $set: {
@@ -547,7 +547,6 @@ export const changeTemplate = async (req, res) => {
     return errorResponse(req, res, error.message);
   }
 };
-
 
 // Message APIs
 export const addMessage = async (req, res) => {
