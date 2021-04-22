@@ -35,7 +35,6 @@ router.post('/getFriendList', auth, userController.getFriendList);
 router.post('/addNoteToFriend', auth, validate(userValidator.addNoteToFriend), userController.addNoteToFriend); // needs change as depends on Name
 router.post('/removeNoteFromFriend', auth, validate(userValidator.removeNoteFromFriend), userController.removeNoteFromFriend); // needs change as depends on Name
 
-
 // template routes
 router.post('/addTemplate', auth, validate(userValidator.addTemplate), userController.addTemplate);
 router.post('/removeTemplate', auth, validate(userValidator.removeTemplate), userController.removeTemplate);
@@ -50,5 +49,7 @@ router.post('/addMessage', auth, validate(userValidator.addMessage), userControl
 router.post('/changeMessage', auth, validate(userValidator.changeMessage), userController.changeMessage);
 router.post('/changeMessageOrder', auth, validate(userValidator.changeMessageOrder), userController.changeMessageOrder);
 
+// Export Data routes
+router.post('/exportTemplateAndMessages', auth, userController.exportTemplateAndMessages);
 
 module.exports = router;

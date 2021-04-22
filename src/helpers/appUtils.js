@@ -6,6 +6,20 @@ const successResponse = (req, res, data, code = 200) => res.send({
   status: true,
 });
 
+const successResponseWithAttachment = (req, res, workbook, code = 200) => {
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  );
+  res.setHeader(
+    'Content-Disposition',
+    'attachment;filename=pepper.xlsx',
+  );
+  workbook.xlsx.write(res).then(() => {
+    res.status(code).end();
+  });
+};
+
 const errorResponse = (
   req,
   res,
@@ -20,12 +34,12 @@ const errorResponse = (
   status: false,
 });
 
-const error = msg => ({
+const error = (msg) => ({
   status: 'error',
   msg,
 });
 
-const success = data => ({
+const success = (data) => ({
   status: 'success',
   data,
 });
@@ -77,7 +91,7 @@ const getCurrentDate = () => {
   return currentTime;
 };
 
-const toStringDate = date => `${date.year}-${date.month}-${date.day}`;
+const toStringDate = (date) => `${date.year}-${date.month}-${date.day}`;
 
 const getNextDay = (currentDay) => {
   const currentDate = new Date(
@@ -91,13 +105,13 @@ const getNextDay = (currentDay) => {
   return nextDayDate;
 };
 
-const isToday = date => _.isEqual(getCurrentDate, date);
+const isToday = (date) => _.isEqual(getCurrentDate, date);
 
 const generateRandom = (length) => {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < length; i += 1) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
@@ -115,4 +129,5 @@ module.exports = {
   getNextDay,
   isToday,
   generateRandom,
+  successResponseWithAttachment,
 };

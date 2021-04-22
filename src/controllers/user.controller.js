@@ -1,9 +1,10 @@
 /* eslint-disable no-underscore-dangle */
 import { successResponse, errorResponse } from '../helpers/appUtils';
+import exportTemplatesData from '../helpers/createExcel';
+import S3Store from '../helpers/fileUpload';
 
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
-const Joi = require('joi');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const base64Img = require('base64-img');
@@ -617,6 +618,31 @@ export const changeMessageOrder = async (req, res) => {
     });
 
     return successResponse(req, res, 'Messages order changed');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+// Export Data APIs
+
+export const exportTemplateAndMessages = async (req, res) => {
+  try {
+    const data = await User.findOne({ _id: req.user._id });
+    if (!data) {
+      return errorResponse(req, res, 'User not found!', 400);
+    }
+    const excelSheet = await exportTemplatesData(data.templates);
+    const s3Store = new S3Store();
+    const fileBuffer = await excelSheet.xlsx.writeBuffer();
+    const file = {
+      buffer: fileBuffer,
+      name: `${data._id}.xlsx`,
+      mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+    const link = await s3Store.multiUpload('sheets', file);
+    return successResponse(req, res, {
+      link,
+    });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }

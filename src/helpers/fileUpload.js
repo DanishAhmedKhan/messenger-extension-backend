@@ -12,6 +12,7 @@ export default class S3Store {
     this.bucket = bucket;
   }
 
+  // ContentEncoding: 'base64',
   async upload(key, file) {
     const params = {
       Bucket: this.bucket,
@@ -19,7 +20,6 @@ export default class S3Store {
       Body: file.buffer, // req.file.path
       ContentType: file.mimetype,
       ResponseContentDisposition: `attachment; filename=${file.name}`,
-      ContentEncoding: 'base64',
       ACL: 'public-read',
     };
     return new Promise((res, rej) => this.s3.upload(params, (error, data) => {
@@ -33,13 +33,9 @@ export default class S3Store {
   }
 
   async multiUpload(key, files) {
-    try {
-      const arr = Array.isArray(files) ? files : [files];
-      const uploadedFiles = arr.map(file => this.upload(key, file, true));
-      return Promise.all(uploadedFiles);
-    } catch (error) {
-      throw error;
-    }
+    const arr = Array.isArray(files) ? files : [files];
+    const uploadedFiles = arr.map((file) => this.upload(key, file, true));
+    return Promise.all(uploadedFiles);
   }
 
   async removeFiles(key, files) {
