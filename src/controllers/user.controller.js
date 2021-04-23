@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from '../helpers/appUtils';
 import exportTemplatesData from '../helpers/createExcel';
 import S3Store from '../helpers/fileUpload';
 
+const Excel = require('exceljs');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
@@ -643,6 +644,53 @@ export const exportTemplateAndMessages = async (req, res) => {
     return successResponse(req, res, {
       link,
     });
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const importTemplateAndMessages = async (req, res) => {
+  try {
+    const data = await User.findOne({ _id: req.user._id });
+    if (!data) {
+      return errorResponse(req, res, 'User not found!', 400);
+    }
+    const excelSheet = req.file;
+    const workbook = new Excel.Workbook();
+    const templatesExcel = await workbook.xlsx.load(excelSheet.buffer);
+    const templatesWorkBook = templatesExcel.getWorksheet('Canned Responses');
+
+    const templatesData = {};
+    // create template object with messages
+    templatesWorkBook.eachRow((row, rowNumber) => {
+      // console.log(`Row ${rowNumber} = ${JSON.stringify(row.values)}`);
+      const templateVale = row.values[1];
+      const msgVale = row.values[2];
+      // const templateIndex = templatesData.indexOf(templateVale);
+      if (templatesData[templateVale]) {
+        templatesData[templateVale].push(msgVale);
+      } else {
+        templatesData[templateVale] = [msgVale];
+        if (msgVale === '') templatesData[templateVale] = [];
+      }
+    });
+
+    const tempalateArray = [];
+    // create template array
+    delete templatesData.Template;
+    Object.keys(templatesData).forEach((template) => {
+      tempalateArray.push({
+        name: template,
+        messages: templatesData[template],
+      });
+    });
+    await User.updateOne({ _id: req.user._id }, {
+      $set: {
+        templates: tempalateArray,
+      },
+    });
+    // console.log('templates====>', tempalateArray);
+    return successResponse(req, res, 'Data Updated');
   } catch (error) {
     return errorResponse(req, res, error.message);
   }

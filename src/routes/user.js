@@ -1,10 +1,12 @@
 import express from 'express';
+import multer from 'multer';
 import validate from 'express-validation';
 import auth from '../middlewares/auth';
 import * as userController from '../controllers/user.controller';
 import * as userValidator from '../controllers/user.validator';
 
 const router = express.Router();
+const upload = multer();
 
 // basic routes
 router.post('/signup', validate(userValidator.signup), userController.signup);
@@ -51,5 +53,6 @@ router.post('/changeMessageOrder', auth, validate(userValidator.changeMessageOrd
 
 // Export Data routes
 router.post('/exportTemplateAndMessages', auth, userController.exportTemplateAndMessages);
+router.post('/importTemplateAndMessages', auth, upload.single('sheet'), userController.importTemplateAndMessages);
 
 module.exports = router;
