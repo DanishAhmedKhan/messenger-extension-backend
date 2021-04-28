@@ -690,7 +690,7 @@ export const importTemplateAndMessages = async (req, res) => {
       },
     });
     // console.log('templates====>', tempalateArray);
-    return successResponse(req, res, 'Data Updated');
+    return successResponse(req, res, { templates: tempalateArray });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
