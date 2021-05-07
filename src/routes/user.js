@@ -19,7 +19,6 @@ router.post('/addTag', auth, validate(userValidator.addTag), userController.addT
 router.post('/removeTag', auth, validate(userValidator.removeTag), userController.removeTag);
 router.post('/getAllTags', auth, userController.getAllTags);
 router.post('/addTagToFriend', auth, validate(userValidator.addTagToFriend), userController.addTagToFriend);
-router.post('/updateImgOfFriend', auth, validate(userValidator.updateImgOfFriend), userController.updateImgOfFriend);
 router.post('/changeTag', auth, validate(userValidator.changeTag), userController.changeTag);
 router.post('/changeTagColor', auth, validate(userValidator.changeTagColor), userController.changeTagColor);
 router.post('/changeTagOrder', auth, validate(userValidator.changeTagOrder), userController.changeTagOrder);
@@ -31,11 +30,12 @@ router.post('/loadData', auth, userController.loadData);
 router.post('/removeFriend', auth, validate(userValidator.removeFriend), userController.removeFriend); // needs change as depends on Name
 router.post('/updateTagsAndFriends', auth, validate(userValidator.updateTagsAndFriends), userController.updateTagsAndFriends);// not in use
 router.post('/updateFriendList', auth, validate(userValidator.updateFriendList), userController.updateFriendList);// to update entire friendList
-
 router.post('/getFriendList', auth, userController.getFriendList);
-
 router.post('/addNoteToFriend', auth, validate(userValidator.addNoteToFriend), userController.addNoteToFriend); // needs change as depends on Name
 router.post('/removeNoteFromFriend', auth, validate(userValidator.removeNoteFromFriend), userController.removeNoteFromFriend); // needs change as depends on Name
+router.post('/updateImgOfFriend', auth, validate(userValidator.updateImgOfFriend), userController.updateImgOfFriend);
+router.post('/updateBulkImages', auth, validate(userValidator.updateBulkImages), userController.updateBulkImages);
+router.post('/updateBulkImagesAndIds', auth, validate(userValidator.updateBulkImagesAndIds), userController.updateBulkImagesAndIds);
 
 // template routes
 router.post('/addTemplate', auth, validate(userValidator.addTemplate), userController.addTemplate);

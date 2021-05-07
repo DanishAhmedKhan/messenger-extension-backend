@@ -1,6 +1,5 @@
 const Joi = require('joi');
 
-
 // basic APIs
 export const signup = {
   body: {
@@ -37,7 +36,6 @@ export const resetPassword = {
   },
 };
 
-
 // Tag APIs
 export const addTag = {
   body: {
@@ -60,6 +58,25 @@ export const addTagToFriend = {
     imageUrl: Joi.string().required(),
     uniqeId: Joi.string(),
     isSync: Joi.boolean(),
+  },
+};
+
+export const updateBulkImages = {
+  body: {
+    updateBulkImages: Joi.array().items(Joi.object().keys({
+      friendId: Joi.string().required(),
+      friendImageUrl: Joi.string().required(),
+    })),
+  },
+};
+
+export const updateBulkImagesAndIds = {
+  body: {
+    updateBulkImagesAndIds: Joi.array().items(Joi.object().keys({
+      newFriendId: Joi.string().required(),
+      friendId: Joi.string().required(),
+      friendImageUrl: Joi.string().required(),
+    })),
   },
 };
 
@@ -90,7 +107,6 @@ export const changeTagOrder = {
     i2: Joi.number().required(),
   },
 };
-
 
 // Friend APIs
 export const removeFriend = {

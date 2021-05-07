@@ -276,20 +276,6 @@ export const addTagToFriend = async (req, res) => {
   }
 };
 
-export const updateImgOfFriend = async (req, res) => {
-  try {
-    const result = await User.updateOne({ _id: req.user._id, 'friends.id': req.body.friendId }, {
-      $set: {
-        'friends.$.imageUrl': req.body.imageUrl,
-      },
-    });
-
-    return successResponse(req, res, result);
-  } catch (error) {
-    return errorResponse(req, res, error.message);
-  }
-};
-
 export const changeTag = async (req, res) => {
   try {
     await User.updateOne({ _id: req.user._id, 'tags.name': req.body.oldTag }, {
@@ -448,6 +434,62 @@ export const removeNoteFromFriend = async (req, res) => {
     });
 
     return successResponse(req, res, 'Removed note from friend');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+const updateFriendImage = async (userId, friendId, imageUrl) => User.updateOne({ _id: userId, 'friends.id': friendId }, {
+  $set: {
+    'friends.$.imageUrl': imageUrl,
+  },
+});
+
+const updateFriendImageAndId = async (userId, friendId, imageUrl, newFriendId) => User.updateOne({ _id: userId, 'friends.id': friendId }, {
+  $set: {
+    'friends.$.imageUrl': imageUrl,
+    'friends.$.id': newFriendId,
+    'friends.$.uniqeId': newFriendId,
+  },
+});
+
+export const updateImgOfFriend = async (req, res) => {
+  try {
+    const result = await updateFriendImage(req.user._id, req.body.friendId, req.body.imageUrl);
+    return successResponse(req, res, result);
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const updateBulkImages = async (req, res) => {
+  try {
+    const updateData = (req.body.updateBulkImages || []);
+    const arrayOfPromises = [];
+    updateData.forEach((data) => {
+      arrayOfPromises.push(updateFriendImage(req.user._id, data.friendId, data.friendImageUrl));
+    });
+    await Promise.all(arrayOfPromises);
+    return successResponse(req, res, 'Images updated');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const updateBulkImagesAndIds = async (req, res) => {
+  try {
+    const updateData = (req.body.updateBulkImagesAndIds || []);
+    const arrayOfPromises = [];
+    updateData.forEach((data) => {
+      arrayOfPromises.push(updateFriendImageAndId(
+        req.user._id,
+        data.friendId,
+        data.friendImageUrl,
+        data.newFriendId,
+      ));
+    });
+    await Promise.all(arrayOfPromises);
+    return successResponse(req, res, 'Data updated');
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
