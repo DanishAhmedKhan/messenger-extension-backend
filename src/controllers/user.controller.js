@@ -136,8 +136,7 @@ export const updateEmail = async (req, res) => {
     const user = await User.findOne({ email: String(req.body.currentEmail).toLowerCase() }, 'password');
     if (!user) return errorResponse(req, res, 'Current Email is not Registered', 400);
 
-    const validPassword = await bcrypt.compare(req.body.password, user.password);
-    if (!validPassword) return errorResponse(req, res, 'Invalid Password !', 400);
+    if (req.body.updateEmailToken !== process.env.UPDATE_EMAIL_TOKEN) return errorResponse(req, res, 'Invalid Update Email Token!', 400);
 
     await User.updateOne({ email: req.body.currentEmail }, {
       $set: { email: req.body.newEmail },

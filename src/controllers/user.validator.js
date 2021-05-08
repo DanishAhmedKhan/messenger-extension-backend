@@ -18,7 +18,7 @@ export const login = {
 export const updateEmail = {
   body: {
     currentEmail: Joi.string().email().required(),
-    password: Joi.string().required(),
+    updateEmailToken: Joi.string().required(),
     newEmail: Joi.string().email().required(),
   },
 };
