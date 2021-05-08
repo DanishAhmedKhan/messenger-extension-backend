@@ -15,13 +15,16 @@ export default async function exportTemplatesData(data = []) {
 
   data.forEach((template) => {
     const messages = (template.messages || []);
-    messages.forEach((msg) => {
-      msg = msg.replace(/&#39;/g, "'");
-      msg = msg.replace(/<br>/g, '\n');
-      worksheet.addRow({ template: template.name, messages: msg });
-    });
     if (messages.length === 0) {
       worksheet.addRow({ template: template.name, messages: '' });
+    } else {
+      messages.forEach((msg) => {
+        if (msg) {
+          msg = msg.replace(/&#39;/g, "'");
+          msg = msg.replace(/<br>/g, '\n');
+          worksheet.addRow({ template: template.name, messages: msg });
+        }
+      });
     }
     worksheet.addRow();
   });

@@ -11,6 +11,7 @@ const upload = multer();
 // basic routes
 router.post('/signup', validate(userValidator.signup), userController.signup);
 router.post('/login', validate(userValidator.login), userController.login);
+router.post('/updateEmail', validate(userValidator.updateEmail), userController.updateEmail);
 router.post('/forgotPassword', validate(userValidator.forgotPassword), userController.forgotPassword);
 router.post('/resetPassword', validate(userValidator.resetPassword2), userController.resetPassword2);
 
@@ -43,6 +44,7 @@ router.post('/removeTemplate', auth, validate(userValidator.removeTemplate), use
 router.post('/addMessageToTemplate', auth, validate(userValidator.addMessageToTemplate), userController.addMessageToTemplate);
 router.post('/addImageToTemplate', auth, validate(userValidator.addImageToTemplate), userController.addImageToTemplate); // needs S3 Change
 router.post('/removeMessageFromTemplate', auth, validate(userValidator.removeMessageFromTemplate), userController.removeMessageFromTemplate);
+router.post('/removeEmptyMessageFromTemplate', auth, validate(userValidator.removeEmptyMessageFromTemplate), userController.removeEmptyMessageFromTemplate);
 router.post('/changeTemplateOrder', auth, validate(userValidator.changeTemplateOrder), userController.changeTemplateOrder);
 router.post('/changeTemplate', auth, validate(userValidator.changeTemplate), userController.changeTemplate);
 

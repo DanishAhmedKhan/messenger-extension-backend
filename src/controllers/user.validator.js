@@ -15,6 +15,14 @@ export const login = {
   },
 };
 
+export const updateEmail = {
+  body: {
+    currentEmail: Joi.string().email().required(),
+    password: Joi.string().required(),
+    newEmail: Joi.string().email().required(),
+  },
+};
+
 export const resetPassword2 = {
   body: {
     email: Joi.string().required(),
@@ -217,6 +225,12 @@ export const removeMessageFromTemplate = {
   body: {
     template: Joi.string().required(),
     message: Joi.string().required(),
+  },
+};
+
+export const removeEmptyMessageFromTemplate = {
+  body: {
+    template: Joi.string().required(),
   },
 };
 

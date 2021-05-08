@@ -131,6 +131,24 @@ export const resetPassword2 = async (req, res) => {
   }
 };
 
+export const updateEmail = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: String(req.body.currentEmail).toLowerCase() }, 'password');
+    if (!user) return errorResponse(req, res, 'Current Email is not Registered', 400);
+
+    const validPassword = await bcrypt.compare(req.body.password, user.password);
+    if (!validPassword) return errorResponse(req, res, 'Invalid Password !', 400);
+
+    await User.updateOne({ email: req.body.currentEmail }, {
+      $set: { email: req.body.newEmail },
+    });
+
+    return successResponse(req, res, 'Email has been Updated');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
 // export const resetPassword = async (req, res) => {
 //   const error = __.validate(req.body, {
 //     email: Joi.string().email().required(),
@@ -640,6 +658,24 @@ export const removeMessageFromTemplate = async (req, res) => {
   }
 };
 
+export const removeEmptyMessageFromTemplate = async (req, res) => {
+  try {
+    const { templates } = await User.findOne({ _id: req.user._id, 'templates.name': req.body.template },
+      { 'templates.$': 1 });
+    const { messages } = templates[0];
+    const msgs = messages.filter((msg) => msg !== null);
+    await User.updateOne({ _id: req.user._id, 'templates.name': req.body.template }, {
+      $set: {
+        'templates.$.messages': msgs,
+      },
+    });
+
+    return successResponse(req, res, 'Null Messages removed from template');
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
 export const changeMessageOrder = async (req, res) => {
   try {
     const t = req.body.template;
@@ -687,6 +723,7 @@ export const exportTemplateAndMessages = async (req, res) => {
       link,
     });
   } catch (error) {
+    console.log('Error Exporting the data====>', error);
     return errorResponse(req, res, error.message);
   }
 };
@@ -734,6 +771,7 @@ export const importTemplateAndMessages = async (req, res) => {
     // console.log('templates====>', tempalateArray);
     return successResponse(req, res, { templates: tempalateArray });
   } catch (error) {
+    console.log('Error Importing the data====>', error);
     return errorResponse(req, res, error.message);
   }
 };
