@@ -727,12 +727,23 @@ export const exportTemplateAndMessages = async (req, res) => {
   }
 };
 
+const setTemplateName = (existingTemplateKeys = [], templateName, i = 1) => {
+  const newTemplateName = `${templateName}(${i})`;
+  if (existingTemplateKeys.includes(newTemplateName)) {
+    i += 1;
+    return setTemplateName(existingTemplateKeys, templateName, i);
+  }
+  return newTemplateName;
+};
+
 export const importTemplateAndMessages = async (req, res) => {
   try {
     const data = await User.findOne({ _id: req.user._id });
     if (!data) {
       return errorResponse(req, res, 'User not found!', 400);
     }
+    const existingTemplatesData = (data.templates || []);
+    const existingTemplateKeys = existingTemplatesData.map((template) => template.name);
     const excelSheet = req.file;
     const workbook = new Excel.Workbook();
     const templatesExcel = await workbook.xlsx.load(excelSheet.buffer);
@@ -753,15 +764,22 @@ export const importTemplateAndMessages = async (req, res) => {
       }
     });
 
-    const tempalateArray = [];
+    const tempalateArray = (existingTemplatesData || []);
     // create template array
     delete templatesData.Template;
     Object.keys(templatesData).forEach((template) => {
+      let templateName = template;
+      // template Name logic
+      if (existingTemplateKeys.includes(template)) {
+        templateName = setTemplateName(existingTemplateKeys, template);
+      }
       tempalateArray.push({
-        name: template,
+        name: templateName,
         messages: templatesData[template],
       });
     });
+    // console.log('existingTemplatesData===>', existingTemplatesData);
+    // console.log('tempalateArray===>', tempalateArray);
     await User.updateOne({ _id: req.user._id }, {
       $set: {
         templates: tempalateArray,
