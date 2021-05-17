@@ -4,6 +4,13 @@ import { successResponse, errorResponse } from '../../helpers/appUtils';
 import User from '../../models/User';
 import FriendProfile from '../../models/FriendProfile';
 
+const defaultfriendProfileData = {
+  description: '',
+  company: '',
+  dealValue: '',
+  profileData: {},
+};
+
 export const updateFriendProfileData = async (req, res) => {
   try {
     const userData = await User.findOne({ _id: req.user._id });
@@ -51,7 +58,7 @@ export const getFriendProfileData = async (req, res) => {
     if (!userData) {
       return errorResponse(req, res, 'User not found!', 400);
     }
-    const friendProfileData = await FriendProfile.findOne({
+    let friendProfileData = await FriendProfile.findOne({
       facebookId: req.body.facebookId,
       user: userData._id,
     }, {
@@ -59,6 +66,8 @@ export const getFriendProfileData = async (req, res) => {
       __v: 0,
       user: 0,
     });
+    if (!friendProfileData) friendProfileData = defaultfriendProfileData;
+
     return successResponse(req, res, friendProfileData);
   } catch (error) {
     return errorResponse(req, res, error.message);
