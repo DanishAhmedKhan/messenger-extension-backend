@@ -7,8 +7,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import ip from 'ip';
 import userRoutes from './src/routes/user';
+import friendRoutes from './src/routes/friendProfile';
 import errorHandler from './src/middlewares/errorHandler';
-
 
 dotenv.config();
 const app = express();
@@ -24,7 +24,6 @@ if (userAuthToken === null) {
 
 const ipAddress = ip.address();
 console.log(`Trying to start Messenger Extension server at ${ipAddress} (in ${appMode} mode)...`);
-
 
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
@@ -44,8 +43,8 @@ app.use('/test', async (req, res) => {
   res.status(200).send('Server running properly');
 });
 
-
 app.use('/api/user', userRoutes);
+app.use('/api/friendProfile', friendRoutes);
 
 // Image static routing
 app.use(express.static(`${__dirname}/public`));
@@ -62,6 +61,6 @@ const mongoDbConfig = {
 
 mongoose.connect(dbUrl, mongoDbConfig)
   .then(() => console.log('Connected to mongodb.'))
-  .catch(err => console.log('Could not connect to mongodb.', err));
+  .catch((err) => console.log('Could not connect to mongodb.', err));
 
 module.exports = app;

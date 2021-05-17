@@ -2,8 +2,8 @@ import express from 'express';
 import multer from 'multer';
 import validate from 'express-validation';
 import auth from '../middlewares/auth';
-import * as userController from '../controllers/user.controller';
-import * as userValidator from '../controllers/user.validator';
+import * as userController from '../controllers/user/user.controller';
+import * as userValidator from '../controllers/user/user.validator';
 
 const router = express.Router();
 const upload = multer();

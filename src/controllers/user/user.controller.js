@@ -1,7 +1,7 @@
 /* eslint-disable no-underscore-dangle */
-import { successResponse, errorResponse } from '../helpers/appUtils';
-import exportTemplatesData from '../helpers/createExcel';
-import S3Store from '../helpers/fileUpload';
+import { successResponse, errorResponse } from '../../helpers/appUtils';
+import exportTemplatesData from '../../helpers/createExcel';
+import S3Store from '../../helpers/fileUpload';
 
 const Excel = require('exceljs');
 const bcrypt = require('bcryptjs');
@@ -9,8 +9,8 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const base64Img = require('base64-img');
-const __ = require('../helpers/appUtils');
-const User = require('../models/User');
+const __ = require('../../helpers/appUtils');
+const User = require('../../models/User');
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
