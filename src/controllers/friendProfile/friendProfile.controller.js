@@ -27,7 +27,7 @@ export const updateFriendProfileData = async (req, res) => {
         description: req.body.description ? req.body.description : existingData.description,
         company: req.body.company ? req.body.company : existingData.company,
         dealValue: req.body.dealValue ? req.body.dealValue : existingData.dealValue,
-        profileData: req.body.profileData ? req.body.profileData : existingData.profileData,
+        profileData: req.body.profileData ? req.body.profileData : {},
       };
       await FriendProfile.updateOne({
         facebookId: req.body.facebookId,
