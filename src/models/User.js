@@ -31,6 +31,8 @@ const userSchema = new Schema({
     tag: String,
     imageUrl: String,
     uniqeId: String,
+    company: { type: String, default: '' },
+    dealValue: { type: String, default: '' },
     isSync: Boolean,
     notes: [String],
     _id: false,

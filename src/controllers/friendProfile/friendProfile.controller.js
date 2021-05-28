@@ -46,6 +46,14 @@ export const updateFriendProfileData = async (req, res) => {
       await newFriendProfile.save();
       delete friendProfileData.user;
     }
+    if ((friendProfileData.dealValue !== '') || (friendProfileData.company !== '')) {
+      await User.updateOne({ _id: req.user._id, 'friends.id': req.body.facebookId }, {
+        $set: {
+          'friends.$.company': friendProfileData.company,
+          'friends.$.dealValue': friendProfileData.dealValue,
+        },
+      });
+    }
     return successResponse(req, res, friendProfileData);
   } catch (error) {
     return errorResponse(req, res, error.message);
