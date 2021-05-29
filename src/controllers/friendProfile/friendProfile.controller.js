@@ -22,11 +22,14 @@ export const updateFriendProfileData = async (req, res) => {
       user: userData.id,
     });
     let friendProfileData;
+    const updatedealValue = req.body.dealValue ? req.body.dealValue : '';
+    const updateCompany = req.body.company ? req.body.company : '';
+    const updateDescription = req.body.description ? req.body.description : '';
     if (existingData) {
       friendProfileData = {
-        description: req.body.description ? req.body.description : existingData.description,
-        company: req.body.company ? req.body.company : existingData.company,
-        dealValue: req.body.dealValue ? req.body.dealValue : existingData.dealValue,
+        description: updateDescription,
+        company: updateCompany,
+        dealValue: updatedealValue,
         profileData: req.body.profileData ? req.body.profileData : {},
       };
       await FriendProfile.updateOne({
@@ -37,23 +40,21 @@ export const updateFriendProfileData = async (req, res) => {
       friendProfileData = {
         user: userData.id,
         facebookId: req.body.facebookId,
-        description: req.body.description ? req.body.description : '',
-        company: req.body.company ? req.body.company : '',
-        dealValue: req.body.dealValue ? req.body.dealValue : '',
+        description: updateDescription,
+        company: updateCompany,
+        dealValue: updatedealValue,
         profileData: req.body.profileData ? req.body.profileData : {},
       };
       const newFriendProfile = new FriendProfile(friendProfileData);
       await newFriendProfile.save();
       delete friendProfileData.user;
     }
-    if ((friendProfileData.dealValue !== '') || (friendProfileData.company !== '')) {
-      await User.updateOne({ _id: req.user._id, 'friends.id': req.body.facebookId }, {
-        $set: {
-          'friends.$.company': friendProfileData.company,
-          'friends.$.dealValue': friendProfileData.dealValue,
-        },
-      });
-    }
+    await User.updateOne({ _id: req.user._id, 'friends.id': req.body.facebookId }, {
+      $set: {
+        'friends.$.company': updateCompany,
+        'friends.$.dealValue': updatedealValue,
+      },
+    });
     return successResponse(req, res, friendProfileData);
   } catch (error) {
     return errorResponse(req, res, error.message);
