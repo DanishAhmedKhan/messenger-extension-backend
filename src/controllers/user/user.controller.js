@@ -2,6 +2,8 @@
 import { successResponse, errorResponse } from '../../helpers/appUtils';
 import exportTemplatesData from '../../helpers/createExcel';
 import S3Store from '../../helpers/fileUpload';
+import User from '../../models/User';
+import FriendProfile from '../../models/FriendProfile';
 
 const Excel = require('exceljs');
 const bcrypt = require('bcryptjs');
@@ -10,7 +12,6 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const base64Img = require('base64-img');
 const __ = require('../../helpers/appUtils');
-const User = require('../../models/User');
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -350,6 +351,10 @@ export const removeFriend = async (req, res) => {
     if (req.body.friendId) {
       await User.updateOne({ _id: req.user._id }, {
         $pull: { friends: { id: req.body.friendId } },
+      });
+      await FriendProfile.deleteOne({
+        facebookId: req.body.friendId,
+        user: req.user._id,
       });
     } else {
       await User.updateOne({ _id: req.user._id }, {
