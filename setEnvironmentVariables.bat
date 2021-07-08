@@ -1,1 +1,0 @@
-set messenger_extension_user_auth_token="Geazy-88**77"
